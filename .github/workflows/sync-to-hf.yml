@@ -46,7 +46,7 @@ jobs:
         env:
           HF_TOKEN: ${{secrets.HF_TOKEN}}
           HF_USER: yhk01          # ← 본인 HF username으로 교체
-          HF_SPACE: yhk01_aaa0034213_aiweb2026-hf         # ← 본인 HF Space 이름으로 교체 (예: calorie-counter)
+          HF_SPACE: yhk01/aaa0034213_aiweb2026-hf       # ← 본인 HF Space 이름으로 교체 (예: calorie-counter)
         run: |
           set -e
           if [ -z "$HF_TOKEN" ]; then
