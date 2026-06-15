@@ -124,7 +124,7 @@ def recommend(user_vibe: str):
         )
     
     try:
-        client = InferenceClient(token=get_token())
+        client = InferenceClient(token=get_token(), timeout=15)
         response = client.chat_completion(
             model=LLM_MODEL,
             messages=[
@@ -133,7 +133,6 @@ def recommend(user_vibe: str):
             ],
             max_tokens=800,
             temperature=0.7,
-            timeout=15,
         )
         raw_result = response.choices[0].message.content
         result = parse_llm_output_safely(raw_result)
