@@ -243,6 +243,14 @@ def build_ui() -> gr.Blocks:
         color: #4e342e !important;
         background-color: #ffffff !important;
     }
+    /* 아웃풋 텍스트박스 비활성화 상태 스타일 재정의 */
+    textarea[readonly], input[readonly] {
+        background-color: #fdfcf7 !important;
+        color: #4e342e !important;
+        border-color: #d0e8d2 !important;
+        cursor: default !important;
+        box-shadow: inset 0 1px 3px rgba(0,0,0,0.02) !important;
+    }
     .submit-btn {
         background: linear-gradient(135deg, #4caf50 0%, #2e7d32 100%) !important;
         color: white !important;
@@ -251,6 +259,12 @@ def build_ui() -> gr.Blocks:
         border-radius: 8px !important;
         font-size: 1.1rem !important;
         box-shadow: 0 4px 12px rgba(46,125,50,0.2) !important;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+    }
+    .submit-btn:hover {
+        transform: translateY(-2px) !important;
+        box-shadow: 0 6px 20px rgba(46,125,50,0.3) !important;
+        background: linear-gradient(135deg, #66bb6a 0%, #388e3c 100%) !important;
     }
     .course-step {
         display: flex;
@@ -289,6 +303,12 @@ def build_ui() -> gr.Blocks:
         border: 1px solid #e8f5e9;
         flex-grow: 1;
         box-shadow: 0 2px 8px rgba(0,0,0,0.03);
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .step-content:hover {
+        transform: translateX(6px);
+        box-shadow: 0 4px 15px rgba(0,0,0,0.06);
+        border-color: #a5d6a7;
     }
     .step-place {
         color: #2e7d32 !important;
