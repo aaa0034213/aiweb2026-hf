@@ -44,7 +44,7 @@ SYSTEM_PROMPT = (
     "너는 감성적인 여행 큐레이터이자 스튜디오 지브리(Studio Ghibli) 애니메이션 전문가인 '지브리 감성 여행 큐레이터'다.\n"
     "사용자가 원하는 여행 분위기나 감성, 테마를 입력하면, 다음 기준에 따라 실제 여행지와 코스를 추천하라:\n"
     "1. 사용자의 입력에서 추상적인 감성(예: 조용함, 아기자기함, 레트로, 청량함, 자연, 신비로움)을 분석한다.\n"
-    "2. 이 분위기와 가장 잘 매치되는 스튜디오 지브리 애니메이션 작품을 하나 선정한다.\n"
+    "2. 이 분위기와 가장 잘 매치되는 스튜디오 지브리 애니메이션 작품을 하나 선정한다. 반드시 실제 스튜디오 지브리 대표작(예: 이웃집 토토로, 센과 치히로의 행방불명, 마녀 배달부 키키, 하울의 움직이는 성, 천공의 성 라퓨타, 모노노케 히메, 벼랑 위의 포뇨, 귀를 기울이면, 바람계곡의 나우시카, 마루 밑 아리에티 등) 중에서만 선택해야 하며, 신카이 마코토 작품이나 다른 제작사 애니메이션(예: 너의 이름은, 목소리의 형태 등)은 절대 제외하라.\n"
     "3. 그 지브리 작품의 감성을 고스란히 느낄 수 있는 '실제 전 세계 여행지(도시, 마을, 혹은 특정 장소)' 1곳을 추천한다.\n"
     "4. 이 장소가 선정된 이유와 지브리 작품의 어떤 장면/감성과 연결되는지 따뜻하고 감성적인 어조로 설명하는 '감성 코멘트'를 작성한다.\n"
     "5. 추천된 장소를 중심으로 도보 또는 가볍게 이동 가능한 3단계 반나절 여행 동선(코스)을 기획한다. 각 단계는 장소 이름과 그곳에서 느낄 수 있는 감성적 활동을 포함해야 한다.\n\n"
@@ -201,9 +201,11 @@ def build_ui() -> gr.Blocks:
     )
 
     css = """
+    @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&family=Noto+Sans+KR:wght@300;400;700&display=swap');
+
     .gradio-container {
         background-color: #fcfaf2 !important;
-        font-family: 'Outfit', 'Inter', -apple-system, sans-serif !important;
+        font-family: 'Outfit', 'Noto Sans KR', -apple-system, sans-serif !important;
     }
     .title-section {
         text-align: center;
@@ -326,6 +328,16 @@ def build_ui() -> gr.Blocks:
                         lines=3
                     )
                     submit_btn = gr.Button("🌿 감성 여행지 찾기", elem_classes=["submit-btn"])
+                    gr.Examples(
+                        examples=[
+                            ["바다가 보이는 조용한 레트로 골목길"],
+                            ["초록빛 숲속과 신비로운 분위기가 가득한 조용한 오두막"],
+                            ["빨간 지붕이 있고 구름이 흐르는 청량한 유럽풍 하늘 아래 마을"],
+                            ["복잡한 도심 속 숨겨진 신비로운 전통 정원"]
+                        ],
+                        inputs=user_input,
+                        label="💡 추천 분위기 예시 (클릭하면 자동 입력됩니다)"
+                    )
                     
             with gr.Column(scale=1):
                 with gr.Group(elem_classes=["main-box"]):
