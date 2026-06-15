@@ -276,13 +276,13 @@ def build_ui() -> gr.Blocks:
     """
     
     with gr.Blocks(css=css, title="지브리 감성 여행지 추천 서비스") as demo:
-        with gr.Div(elem_classes=["title-section"]):
+        with gr.Group(elem_classes=["title-section"]):
             gr.Markdown("# 🌿 Ghibli-Vibe Travel Mapper")
             gr.Markdown("<p style='text-align: center; color: #4e342e; font-size: 1.1rem;'>원하는 여행 분위기를 일상어로 쓰시면, 지브리 감성이 가득한 실제 여행지와 반나절 코스를 추천해 드립니다.</p>")
             
         with gr.Row():
             with gr.Column(scale=1):
-                with gr.Div(elem_classes=["main-box"]):
+                with gr.Group(elem_classes=["main-box"]):
                     user_input = gr.Textbox(
                         label="원하는 분위기 또는 테마 입력",
                         placeholder="예: 바다가 보이는 조용한 레트로 골목길 / 초록빛 숲속과 신비로운 분위기가 가득한 조용한 오두막",
@@ -291,7 +291,7 @@ def build_ui() -> gr.Blocks:
                     submit_btn = gr.Button("🌿 감성 여행지 찾기", elem_classes=["submit-btn"])
                     
             with gr.Column(scale=1):
-                with gr.Div(elem_classes=["main-box"]):
+                with gr.Group(elem_classes=["main-box"]):
                     gr.Markdown("### 📍 추천 결과")
                     with gr.Row():
                         dest_out = gr.Textbox(label="추천 목적지", interactive=False)
