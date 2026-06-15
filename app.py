@@ -77,19 +77,19 @@ SYSTEM_PROMPT = (
 
 # 지브리 작품별 감성 Fallback 이미지 (Wikipedia 검색 실패 시 분위기에 맞는 사진 제공)
 GHIBLI_FALLBACK_IMAGES = {
-    "토토로":       "https://images.unsplash.com/photo-1563298723-dcfebaa392e3?w=900",  # 일본 시골 마을
-    "센과 치히로":  "https://images.unsplash.com/photo-1493976040374-85c8e12f0c0e?w=900",  # 일본 교토 도리이
-    "모노노케":     "https://images.unsplash.com/photo-1448375240586-882707db888b?w=900",  # 원시 숲
-    "마녀 배달부":  "https://images.unsplash.com/photo-1520637836862-4d197d17c52a?w=900",  # 유럽 해안 마을
-    "하울":         "https://images.unsplash.com/photo-1467003909585-2f8a72700288?w=900",  # 유럽 성/마을
-    "라퓨타":       "https://images.unsplash.com/photo-1519681393784-d120267933ba?w=900",  # 하늘/구름
-    "나우시카":     "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=900",  # 광활한 대지
-    "포뇨":         "https://images.unsplash.com/photo-1505118380757-91f5f5632de0?w=900",  # 바다
-    "귀를 기울이면":"https://images.unsplash.com/photo-1444927714506-8492d94b4e3d?w=900",  # 구시가지 골목
-    "아리에티":     "https://images.unsplash.com/photo-1416879595882-3373a0480b5b?w=900",  # 정원
-    "키키":         "https://images.unsplash.com/photo-1520637836862-4d197d17c52a?w=900",  # 유럽 해안 마을
+    "토토로":        "https://images.unsplash.com/photo-1493976040374-85c8e12f0c0e?w=800",
+    "센과 치히로":   "https://images.unsplash.com/photo-1493976040374-85c8e12f0c0e?w=800",
+    "모노노케":      "https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=800",
+    "마녀 배달부":   "https://images.unsplash.com/photo-1467003909585-2f8a72700288?w=800",
+    "하울":          "https://images.unsplash.com/photo-1467003909585-2f8a72700288?w=800",
+    "라퓨타":        "https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=800",
+    "나우시카":      "https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=800",
+    "포뇨":          "https://images.unsplash.com/photo-1505118380757-91f5f5632de0?w=800",
+    "귀를 기울이면": "https://images.unsplash.com/photo-1493976040374-85c8e12f0c0e?w=800",
+    "아리에티":      "https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=800",
+    "키키":          "https://images.unsplash.com/photo-1467003909585-2f8a72700288?w=800",
 }
-_DEFAULT_FALLBACK_IMAGE = "https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=900"
+_DEFAULT_FALLBACK_IMAGE = "https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=800"
 
 
 FALLBACK_RECOMMENDATION = {
@@ -177,6 +177,17 @@ def parse_llm_output_safely(raw_output: Any) -> dict[str, Any]:
     raise ValueError("Invalid JSON output")
 
 
+def _validate_image_url(url: str) -> bool:
+    """URL이 실제로 접근 가능한지 HEAD 요청으로 확인한다."""
+    try:
+        req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
+        req.get_method = lambda: 'HEAD'
+        with urllib.request.urlopen(req, timeout=5) as resp:
+            return resp.status == 200
+    except Exception:
+        return False
+
+
 def _search_wiki_image(lang: str, q: str) -> str | None:
     """Wikipedia API로 특정 언어/쿼리에 맞는 이미지 URL을 반환. 없으면 None."""
     try:
@@ -195,7 +206,7 @@ def _search_wiki_image(lang: str, q: str) -> str | None:
         img_url = (
             f"https://{lang}.wikipedia.org/w/api.php"
             f"?action=query&titles={urllib.parse.quote(page_title)}"
-            f"&prop=pageimages&format=json&pithumbsize=900"
+            f"&prop=pageimages&format=json&pithumbsize=800"
         )
         req = urllib.request.Request(img_url, headers={'User-Agent': 'Mozilla/5.0'})
         with urllib.request.urlopen(req, timeout=6) as response:
@@ -203,7 +214,8 @@ def _search_wiki_image(lang: str, q: str) -> str | None:
             pages = data.get("query", {}).get("pages", {})
             for _, page_data in pages.items():
                 source = page_data.get("thumbnail", {}).get("source")
-                if source:
+                # URL이 실제로 접근 가능한지 검증 후 반환
+                if source and _validate_image_url(source):
                     return source
     except Exception as e:
         print(f"Wikipedia image search failed ({lang}, '{q}'): {e}")
