@@ -11,6 +11,8 @@ from __future__ import annotations
 import json
 import os
 import re
+import urllib.request
+import urllib.parse
 from typing import Any
 
 import gradio as gr
@@ -114,6 +116,33 @@ def parse_llm_output_safely(raw_output: Any) -> dict[str, Any]:
                 pass
     raise ValueError("Invalid JSON output")
 
+def get_real_image_wiki(query: str) -> str | None:
+    # 한글 및 영어 Wikipedia 검색을 통해 실제 저작권 없는 위치 이미지 획득
+    for lang in ["ko", "en"]:
+        try:
+            search_url = f"https://{lang}.wikipedia.org/w/api.php?action=query&list=search&srsearch={urllib.parse.quote(query)}&format=json"
+            req = urllib.request.Request(search_url, headers={'User-Agent': 'Mozilla/5.0'})
+            with urllib.request.urlopen(req, timeout=5) as response:
+                data = json.loads(response.read().decode('utf-8'))
+                search_results = data.get("query", {}).get("search", [])
+                if not search_results:
+                    continue
+                page_title = search_results[0]["title"]
+            
+            img_url = f"https://{lang}.wikipedia.org/w/api.php?action=query&titles={urllib.parse.quote(page_title)}&prop=pageimages&format=json&pithumbsize=800"
+            req = urllib.request.Request(img_url, headers={'User-Agent': 'Mozilla/5.0'})
+            with urllib.request.urlopen(req, timeout=5) as response:
+                data = json.loads(response.read().decode('utf-8'))
+                pages = data.get("query", {}).get("pages", {})
+                for page_id, page_data in pages.items():
+                    thumbnail = page_data.get("thumbnail", {})
+                    source = thumbnail.get("source")
+                    if source:
+                        return source
+        except Exception as e:
+            print(f"Error fetching Wikipedia image ({lang}) for query '{query}': {e}")
+    return None
+
 def recommend(user_vibe: str):
     if not user_vibe or not user_vibe.strip():
         return (
@@ -186,23 +215,21 @@ def recommend(user_vibe: str):
         </div>
         """
     
-    # 🎨 AI 이미지 생성 (지브리 감성 풍경화)
+    # 📸 실제 저작권 없는 고화질 이미지 가져오기 (위키피디아 API 및 Unsplash Fallback)
     image_result = None
-    if destination and ghibli_work and destination != "알 수 없는 목적지" and destination != "⚠️ 입력 필요":
+    if destination and destination != "알 수 없는 목적지" and destination != "⚠️ 입력 필요":
         try:
-            # 타임아웃 방지를 위해 이미지 생성에는 10초 타임아웃 부여
-            img_client = InferenceClient(token=get_token(), timeout=10)
-            image_prompt = (
-                f"Studio Ghibli style watercolor anime painting of {destination}, "
-                f"inspired by {ghibli_work}, scenic landscape, nostalgic atmosphere, "
-                f"soft warm sunlight, highly detailed, masterwork, 8k"
-            )
-            image_result = img_client.text_to_image(
-                prompt=image_prompt,
-                model="black-forest-labs/FLUX.1-schnell"
-            )
+            # 검색어 정제 (예: "일본 가마쿠라 고쿠라쿠지 역" -> "가마쿠라 에노시마" 또는 "가마쿠라")
+            query = destination.replace("일본 ", "").replace("역", "").replace("마을", "").replace("온천마을", "").strip()
+            # 괄호 제거 (예: "유후인 온천마을 (Yufuin)" -> "유후인")
+            query = re.sub(r"\(.*?\)", "", query).strip()
+            image_result = get_real_image_wiki(query)
         except Exception as img_err:
-            print(f"Error during image generation: {img_err}")
+            print(f"Error fetching real image: {img_err}")
+            
+    if not image_result:
+        # Wikipedia 이미지 검색 실패 시 신뢰할 수 있는 Unsplash의 자유 저작권 실제 교토 풍경 사진으로 대체
+        image_result = "https://images.unsplash.com/photo-1493976040374-85c8e12f0c0e?w=800"
             
     return destination, ghibli_work, vibe_comment, course_html, image_result
 
@@ -368,6 +395,10 @@ def build_ui() -> gr.Blocks:
         border-radius: 12px !important;
         margin-top: 1rem !important;
         margin-bottom: 1rem !important;
+    }
+    /* 결과 생성 시간 및 타이머 관련 정보 숨김 처리 (깔끔한 UI 구성) */
+    .meta-text, [class*="meta-text"], .timer, .duration, .eta-bar, [class*="eta-bar"], [class*="timer"] {
+        display: none !important;
     }
     """
     
