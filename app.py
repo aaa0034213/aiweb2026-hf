@@ -167,6 +167,39 @@ def recommend(user_vibe: str):
     return destination, ghibli_work, vibe_comment, course_html
 
 def build_ui() -> gr.Blocks:
+    # 1. 지브리 테마 스타일 정의 (라이트 모드 강제 적용)
+    theme = gr.themes.Soft(
+        primary_hue="green",
+        secondary_hue="stone",
+        neutral_hue="stone",
+    ).set(
+        # 전체 배경 및 블록 배경을 따뜻한 미색과 흰색으로 고정 (다크모드에서도 강제 적용)
+        body_background_fill="#fcfaf2",
+        body_background_fill_dark="#fcfaf2",
+        block_background_fill="#ffffff",
+        block_background_fill_dark="#ffffff",
+        
+        # 텍스트 입출력 상자 배경색 고정
+        input_background_fill="#ffffff",
+        input_background_fill_dark="#ffffff",
+        
+        # 텍스트 색상 및 어두운 모드 대비 텍스트 색상 고정
+        body_text_color="#4e342e",
+        body_text_color_dark="#4e342e",
+        block_label_text_color="#2e7d32",
+        block_label_text_color_dark="#2e7d32",
+        
+        # 버튼 스타일링
+        button_primary_background_fill="linear-gradient(135deg, #4caf50 0%, #2e7d32 100%)",
+        button_primary_background_fill_dark="linear-gradient(135deg, #4caf50 0%, #2e7d32 100%)",
+        button_primary_text_color="#ffffff",
+        button_primary_text_color_dark="#ffffff",
+        
+        # 테두리 선
+        border_color_primary="#e0dcd3",
+        border_color_primary_dark="#e0dcd3",
+    )
+
     css = """
     .gradio-container {
         background-color: #fcfaf2 !important;
@@ -181,17 +214,20 @@ def build_ui() -> gr.Blocks:
         box-shadow: 0 4px 15px rgba(0,0,0,0.05);
         border: 1px solid #a5d6a7;
     }
-    .title-section h1 {
+    /* 타이틀 및 마크다운 텍스트 색상 및 정렬 강제 */
+    .title-section h1, .title-section .prose h1, .title-section h1 * {
         color: #2e7d32 !important;
         font-size: 2.2rem !important;
         font-weight: 800 !important;
         margin-bottom: 0.5rem !important;
         text-shadow: 1px 1px 2px rgba(255,255,255,0.8);
+        text-align: center !important;
     }
-    .title-section p {
+    .title-section p, .title-section .prose p, .title-section p * {
         color: #4e342e !important;
         font-size: 1.1rem !important;
         margin: 0 !important;
+        text-align: center !important;
     }
     .main-box {
         background: white !important;
@@ -200,6 +236,11 @@ def build_ui() -> gr.Blocks:
         box-shadow: 0 8px 30px rgba(0,0,0,0.02) !important;
         padding: 1.5rem !important;
     }
+    /* 다크모드 대응: 입력창 텍스트 색상을 어두운 갈색으로 강제 고정 */
+    textarea, input[type="text"] {
+        color: #4e342e !important;
+        background-color: #ffffff !important;
+    }
     .submit-btn {
         background: linear-gradient(135deg, #4caf50 0%, #2e7d32 100%) !important;
         color: white !important;
@@ -207,6 +248,7 @@ def build_ui() -> gr.Blocks:
         font-weight: bold !important;
         border-radius: 8px !important;
         font-size: 1.1rem !important;
+        box-shadow: 0 4px 12px rgba(46,125,50,0.2) !important;
     }
     .course-step {
         display: flex;
@@ -267,7 +309,7 @@ def build_ui() -> gr.Blocks:
     }
     """
     
-    with gr.Blocks(css=css, title="지브리 감성 여행지 추천 서비스") as demo:
+    with gr.Blocks(css=css, theme=theme, title="지브리 감성 여행지 추천 서비스") as demo:
         with gr.Group(elem_classes=["title-section"]):
             gr.Markdown("# 🌿 Ghibli-Vibe Travel Mapper")
             gr.Markdown("<p style='text-align: center; color: #4e342e; font-size: 1.1rem;'>원하는 여행 분위기를 일상어로 쓰시면, 지브리 감성이 가득한 실제 여행지와 반나절 코스를 추천해 드립니다.</p>")
