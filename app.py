@@ -143,10 +143,12 @@ def recommend(user_vibe: str):
         # fallback
         
         # 에러 원인 분석 (토큰 누락 여부)
+        env_keys = [k for k in os.environ.keys() if "HF" in k or "TOKEN" in k]
         is_token_missing = "HF_TOKEN" in str(e) or "환경변수가 비어 있습니다" in str(e)
         if is_token_missing:
             debug_info = (
-                "⚠️ [오류 안내: Hugging Face Space의 Settings에 API 토큰(HF_TOKEN)이 등록되지 않아 기본 추천지가 제공됩니다]\n"
+                f"⚠️ [오류 안내: Hugging Face Space의 Settings에 API 토큰(HF_TOKEN)이 등록되지 않아 기본 추천지가 제공됩니다]\n"
+                f"(현재 컨테이너 내부의 토큰 관련 환경변수 리스트: {env_keys})\n\n"
                 "실시간 AI 추천 기능을 활성화하려면 다음 단계를 진행해 주세요:\n"
                 "1. 본인의 Hugging Face Space 페이지 우상단의 'Settings' 메뉴 클릭\n"
                 "2. 'Variables and secrets' 섹션으로 이동\n"
