@@ -75,6 +75,23 @@ SYSTEM_PROMPT = (
     "}"
 )
 
+# 지브리 작품별 감성 Fallback 이미지 (Wikipedia 검색 실패 시 분위기에 맞는 사진 제공)
+GHIBLI_FALLBACK_IMAGES = {
+    "토토로":       "https://images.unsplash.com/photo-1563298723-dcfebaa392e3?w=900",  # 일본 시골 마을
+    "센과 치히로":  "https://images.unsplash.com/photo-1493976040374-85c8e12f0c0e?w=900",  # 일본 교토 도리이
+    "모노노케":     "https://images.unsplash.com/photo-1448375240586-882707db888b?w=900",  # 원시 숲
+    "마녀 배달부":  "https://images.unsplash.com/photo-1520637836862-4d197d17c52a?w=900",  # 유럽 해안 마을
+    "하울":         "https://images.unsplash.com/photo-1467003909585-2f8a72700288?w=900",  # 유럽 성/마을
+    "라퓨타":       "https://images.unsplash.com/photo-1519681393784-d120267933ba?w=900",  # 하늘/구름
+    "나우시카":     "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=900",  # 광활한 대지
+    "포뇨":         "https://images.unsplash.com/photo-1505118380757-91f5f5632de0?w=900",  # 바다
+    "귀를 기울이면":"https://images.unsplash.com/photo-1444927714506-8492d94b4e3d?w=900",  # 구시가지 골목
+    "아리에티":     "https://images.unsplash.com/photo-1416879595882-3373a0480b5b?w=900",  # 정원
+    "키키":         "https://images.unsplash.com/photo-1520637836862-4d197d17c52a?w=900",  # 유럽 해안 마을
+}
+_DEFAULT_FALLBACK_IMAGE = "https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=900"
+
+
 FALLBACK_RECOMMENDATION = {
     "destination": "일본 유후인 온천마을 (Yufuin)",
     "matching_ghibli_work": "이웃집 토토로 (My Neighbor Totoro)",
@@ -100,47 +117,136 @@ FALLBACK_RECOMMENDATION = {
 
 def parse_llm_output_safely(raw_output: Any) -> dict[str, Any]:
     """
-    JsonOutputParser가 가끔 실패하거나 문자열 그대로 넘어오는 경우를 대비하여
-    정규표현식이나 추가 처리를 통해 안전하게 JSON 데이터를 파싱합니다.
+    LLM 출력을 안전하게 JSON으로 파싱합니다.
+    마크다운 코드블록, 부가 텍스트, trailing comma 등 다양한 형식을 처리합니다.
     """
     if isinstance(raw_output, dict):
         return raw_output
-    
-    if isinstance(raw_output, str):
-        cleaned = raw_output.strip()
-        match = re.search(r"\{.*\}", cleaned, re.DOTALL)
-        if match:
-            try:
-                return json.loads(match.group(0))
-            except Exception:
-                pass
+
+    if not isinstance(raw_output, str):
+        raise ValueError("Invalid JSON output")
+
+    text = raw_output.strip()
+
+    # 단계 1: 그대로 파싱 시도
+    try:
+        return json.loads(text)
+    except Exception:
+        pass
+
+    # 단계 2: 마크다운 코드블록 제거 후 파싱 (```json ... ``` 또는 ``` ... ```)
+    stripped = re.sub(r"```(?:json)?\s*", "", text)
+    stripped = re.sub(r"```\s*$", "", stripped, flags=re.MULTILINE).strip()
+    try:
+        return json.loads(stripped)
+    except Exception:
+        pass
+
+    # 단계 3: 첫 번째 { 부터 마지막 } 까지 추출해서 파싱
+    start = text.find("{")
+    end = text.rfind("}")
+    candidate = ""
+    if start != -1 and end != -1 and end > start:
+        candidate = text[start: end + 1]
+        try:
+            return json.loads(candidate)
+        except Exception:
+            pass
+
+    # 단계 4: 마크다운 제거 후 { ~ } 재시도
+    start2 = stripped.find("{")
+    end2 = stripped.rfind("}")
+    candidate2 = ""
+    if start2 != -1 and end2 != -1 and end2 > start2:
+        candidate2 = stripped[start2: end2 + 1]
+        try:
+            return json.loads(candidate2)
+        except Exception:
+            pass
+
+    # 단계 5: trailing comma 등 흔한 JSON 오류 자동 수정 후 파싱
+    base = candidate2 or candidate
+    if base:
+        try:
+            fixed = re.sub(r",\s*([}\]])", r"\1", base)
+            return json.loads(fixed)
+        except Exception:
+            pass
+
+    print(f"[parse_llm_output_safely] 파싱 실패. 원본 일부:\n{text[:400]}")
     raise ValueError("Invalid JSON output")
 
+
+def _search_wiki_image(lang: str, q: str) -> str | None:
+    """Wikipedia API로 특정 언어/쿼리에 맞는 이미지 URL을 반환. 없으면 None."""
+    try:
+        search_url = (
+            f"https://{lang}.wikipedia.org/w/api.php"
+            f"?action=query&list=search&srsearch={urllib.parse.quote(q)}&format=json"
+        )
+        req = urllib.request.Request(search_url, headers={'User-Agent': 'Mozilla/5.0'})
+        with urllib.request.urlopen(req, timeout=6) as response:
+            data = json.loads(response.read().decode('utf-8'))
+            search_results = data.get("query", {}).get("search", [])
+            if not search_results:
+                return None
+            page_title = search_results[0]["title"]
+
+        img_url = (
+            f"https://{lang}.wikipedia.org/w/api.php"
+            f"?action=query&titles={urllib.parse.quote(page_title)}"
+            f"&prop=pageimages&format=json&pithumbsize=900"
+        )
+        req = urllib.request.Request(img_url, headers={'User-Agent': 'Mozilla/5.0'})
+        with urllib.request.urlopen(req, timeout=6) as response:
+            data = json.loads(response.read().decode('utf-8'))
+            pages = data.get("query", {}).get("pages", {})
+            for _, page_data in pages.items():
+                source = page_data.get("thumbnail", {}).get("source")
+                if source:
+                    return source
+    except Exception as e:
+        print(f"Wikipedia image search failed ({lang}, '{q}'): {e}")
+    return None
+
+
 def get_real_image_wiki(query: str) -> str | None:
-    # 한글 및 영어 Wikipedia 검색을 통해 실제 저작권 없는 위치 이미지 획득
-    for lang in ["ko", "en"]:
-        try:
-            search_url = f"https://{lang}.wikipedia.org/w/api.php?action=query&list=search&srsearch={urllib.parse.quote(query)}&format=json"
-            req = urllib.request.Request(search_url, headers={'User-Agent': 'Mozilla/5.0'})
-            with urllib.request.urlopen(req, timeout=5) as response:
-                data = json.loads(response.read().decode('utf-8'))
-                search_results = data.get("query", {}).get("search", [])
-                if not search_results:
-                    continue
-                page_title = search_results[0]["title"]
-            
-            img_url = f"https://{lang}.wikipedia.org/w/api.php?action=query&titles={urllib.parse.quote(page_title)}&prop=pageimages&format=json&pithumbsize=800"
-            req = urllib.request.Request(img_url, headers={'User-Agent': 'Mozilla/5.0'})
-            with urllib.request.urlopen(req, timeout=5) as response:
-                data = json.loads(response.read().decode('utf-8'))
-                pages = data.get("query", {}).get("pages", {})
-                for page_id, page_data in pages.items():
-                    thumbnail = page_data.get("thumbnail", {})
-                    source = thumbnail.get("source")
-                    if source:
-                        return source
-        except Exception as e:
-            print(f"Error fetching Wikipedia image ({lang}) for query '{query}': {e}")
+    """목적지 쿼리로 Wikipedia 이미지를 검색한다.
+    괄호 안 영문명을 우선 사용하고, 국가명 접두사를 제거한 한국어명도 시도한다.
+    """
+    # 괄호 안 영문명 추출 (예: "유후인 온천마을 (Yufuin)" → "Yufuin")
+    english_match = re.search(r'\(([A-Za-z][\w\s,\-\']+)\)', query)
+    english_name = english_match.group(1).strip() if english_match else None
+
+    # 국가명/불필요 단어 제거한 한국어 쿼리
+    COUNTRY_PREFIXES = [
+        "일본 ", "한국 ", "프랑스 ", "이탈리아 ", "스코틀랜드 ", "영국 ",
+        "독일 ", "오스트리아 ", "스위스 ", "네덜란드 ", "중국 ", "대만 ",
+        "포르투갈 ", "스페인 ", "노르웨이 ", "스웨덴 ", "아이슬란드 ",
+        "뉴질랜드 ", "캐나다 ", "미국 ", "체코 ", "헝가리 ", "크로아티아 ",
+    ]
+    korean_query = re.sub(r'\(.*?\)', '', query).strip()
+    for prefix in COUNTRY_PREFIXES:
+        if korean_query.startswith(prefix):
+            korean_query = korean_query[len(prefix):].strip()
+            break
+    # 불필요한 단어 추가 제거
+    for word in ["원시림", "온천마을", "마을", "역", "항구", "구시가지"]:
+        korean_query = korean_query.replace(word, "").strip()
+
+    # 검색 우선순위: 영문명(EN) → 한글명(KO) → 한글명(EN)
+    search_list: list[tuple[str, str]] = []
+    if english_name:
+        search_list.append(("en", english_name))
+    if korean_query:
+        search_list.append(("ko", korean_query))
+    if korean_query and not english_name:
+        search_list.append(("en", korean_query))
+
+    for lang, q in search_list:
+        result = _search_wiki_image(lang, q)
+        if result:
+            return result
     return None
 
 def recommend(user_vibe: str):
@@ -215,21 +321,31 @@ def recommend(user_vibe: str):
         </div>
         """
     
-    # 📸 실제 저작권 없는 고화질 이미지 가져오기 (위키피디아 API 및 Unsplash Fallback)
+    # 📸 목적지에 맞는 실제 이미지 가져오기 (Wikipedia → 코스 장소 → 지브리별 Fallback 순)
     image_result = None
-    if destination and destination != "알 수 없는 목적지" and destination != "⚠️ 입력 필요":
+    if destination and destination not in ("알 수 없는 목적지", "⚠️ 입력 필요"):
         try:
-            # 검색어 정제 (예: "일본 가마쿠라 고쿠라쿠지 역" -> "가마쿠라 에노시마" 또는 "가마쿠라")
-            query = destination.replace("일본 ", "").replace("역", "").replace("마을", "").replace("온천마을", "").strip()
-            # 괄호 제거 (예: "유후인 온천마을 (Yufuin)" -> "유후인")
-            query = re.sub(r"\(.*?\)", "", query).strip()
-            image_result = get_real_image_wiki(query)
+            # 1차: 목적지명으로 Wikipedia 검색
+            image_result = get_real_image_wiki(destination)
         except Exception as img_err:
-            print(f"Error fetching real image: {img_err}")
-            
+            print(f"Error fetching destination image: {img_err}")
+
+    if not image_result and course_list:
+        # 2차: 첫 번째 코스 장소명으로 추가 검색
+        try:
+            first_place = course_list[0].get("place", "")
+            if first_place:
+                image_result = get_real_image_wiki(first_place)
+        except Exception as img_err2:
+            print(f"Error fetching course place image: {img_err2}")
+
     if not image_result:
-        # Wikipedia 이미지 검색 실패 시 신뢰할 수 있는 Unsplash의 자유 저작권 실제 교토 풍경 사진으로 대체
-        image_result = "https://images.unsplash.com/photo-1493976040374-85c8e12f0c0e?w=800"
+        # 3차: 지브리 작품별 감성에 맞는 Fallback 이미지 선택
+        image_result = _DEFAULT_FALLBACK_IMAGE
+        for work_key, url in GHIBLI_FALLBACK_IMAGES.items():
+            if work_key in ghibli_work:
+                image_result = url
+                break
             
     return destination, ghibli_work, vibe_comment, course_html, image_result
 
@@ -407,8 +523,15 @@ def build_ui() -> gr.Blocks:
             gr.Markdown("# 🌿 Ghibli-Vibe Travel Mapper")
             gr.Markdown("<p style='text-align: center; color: #4e342e; font-size: 1.1rem;'>원하는 여행 분위기를 일상어로 쓰시면, 지브리 감성이 가득한 실제 여행지와 반나절 코스를 추천해 드립니다.</p>")
             
-        with gr.Accordion("💡 Ghibli Travel Mapper 데모 프리뷰 및 안내 가이드 (클릭하여 열기)", open=False, elem_classes=["guide-accordion"]):
-            gr.Image("https://raw.githubusercontent.com/aaa0034213/aiweb2026/main/screenshot.png", show_label=False, interactive=False)
+        with gr.Accordion("💡 Ghibli Travel Mapper 사용 가이드 (클릭하여 열기)", open=False, elem_classes=["guide-accordion"]):
+            gr.Markdown("""
+**✨ 이렇게 사용하세요:**
+1. 원하는 **여행 분위기나 테마**를 자유롭게 입력하세요
+2. **🌿 감성 여행지 찾기** 버튼을 누르세요
+3. AI가 추천하는 **지브리 감성 여행지 + 반나절 코스**를 확인하세요
+
+**💬 예시 키워드:** 조용한 숲속 오두막, 바다가 보이는 레트로 골목길, 안개 낀 유럽 산골 마을...
+            """)
             
         # 2. 상단 입력 영역 (가운데 정렬된 아담한 폭의 카드)
         with gr.Row():
@@ -437,10 +560,10 @@ def build_ui() -> gr.Blocks:
 
         # 3. 하단 결과 영역 (가로폭을 넓게 쓰는 시원한 레이아웃 - 좌측 이미지, 우측 텍스트)
         with gr.Row():
-            with gr.Column(scale=5):  # 좌측: AI 생성 지브리 감성 풍경화
+            with gr.Column(scale=5):  # 좌측: 실제 감성 풍경화
                 with gr.Group(elem_classes=["main-box"]):
-                    gr.Markdown("### 🎨 AI가 그린 감성 풍경화")
-                    image_out = gr.Image(label="Ghibli Style 감성 풍경", interactive=False, show_label=False)
+                    gr.Markdown("### 🎨 감성 풍경화")
+                    image_out = gr.Image(label="감성 풍경화", interactive=False, show_label=False)
                     
             with gr.Column(scale=7):  # 우측: AI 추천 여행지 큐레이션 및 타임라인
                 with gr.Group(elem_classes=["main-box"]):
