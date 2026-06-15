@@ -469,5 +469,5 @@ if __name__ == "__main__":
         server_name="0.0.0.0" if is_space else "127.0.0.1",
         server_port=int(os.getenv("PORT", 7860)),
         show_api=False,
-        #ssr_mode=False,
+        show_error=True,
     )
