@@ -120,7 +120,8 @@ def recommend(user_vibe: str):
             "⚠️ 입력 필요",
             "⚠️ 입력 필요",
             "원하는 여행 분위기를 텍스트 창에 입력해 주세요.",
-            "<p style='color: #888;'>분위기 추천을 입력하시면 여기에 코스가 표시됩니다.</p>"
+            "<p style='color: #888;'>분위기 추천을 입력하시면 여기에 코스가 표시됩니다.</p>",
+            None
         )
     
     try:
@@ -185,7 +186,25 @@ def recommend(user_vibe: str):
         </div>
         """
     
-    return destination, ghibli_work, vibe_comment, course_html
+    # 🎨 AI 이미지 생성 (지브리 감성 풍경화)
+    image_result = None
+    if destination and ghibli_work and destination != "알 수 없는 목적지" and destination != "⚠️ 입력 필요":
+        try:
+            # 타임아웃 방지를 위해 이미지 생성에는 10초 타임아웃 부여
+            img_client = InferenceClient(token=get_token(), timeout=10)
+            image_prompt = (
+                f"Studio Ghibli style watercolor anime painting of {destination}, "
+                f"inspired by {ghibli_work}, scenic landscape, nostalgic atmosphere, "
+                f"soft warm sunlight, highly detailed, masterwork, 8k"
+            )
+            image_result = img_client.text_to_image(
+                prompt=image_prompt,
+                model="black-forest-labs/FLUX.1-schnell"
+            )
+        except Exception as img_err:
+            print(f"Error during image generation: {img_err}")
+            
+    return destination, ghibli_work, vibe_comment, course_html, image_result
 
 def build_ui() -> gr.Blocks:
     # 1. 지브리 테마 스타일 정의 (라이트 모드 강제 적용)
@@ -385,9 +404,14 @@ def build_ui() -> gr.Blocks:
             with gr.Column(scale=1):
                 pass
 
-        # 3. 하단 결과 영역 (가로폭을 넓게 쓰는 시원한 레이아웃)
+        # 3. 하단 결과 영역 (가로폭을 넓게 쓰는 시원한 레이아웃 - 좌측 이미지, 우측 텍스트)
         with gr.Row():
-            with gr.Column(scale=12):
+            with gr.Column(scale=5):  # 좌측: AI 생성 지브리 감성 풍경화
+                with gr.Group(elem_classes=["main-box"]):
+                    gr.Markdown("### 🎨 AI가 그린 감성 풍경화")
+                    image_out = gr.Image(label="Ghibli Style 감성 풍경", interactive=False, show_label=False)
+                    
+            with gr.Column(scale=7):  # 우측: AI 추천 여행지 큐레이션 및 타임라인
                 with gr.Group(elem_classes=["main-box"]):
                     gr.Markdown("### 📍 추천 결과")
                     with gr.Row():
@@ -401,7 +425,7 @@ def build_ui() -> gr.Blocks:
         submit_btn.click(
             fn=recommend,
             inputs=user_input,
-            outputs=[dest_out, work_out, vibe_out, course_out]
+            outputs=[dest_out, work_out, vibe_out, course_out, image_out]
         )
         
     return demo

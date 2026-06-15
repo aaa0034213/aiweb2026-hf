@@ -12,7 +12,7 @@ from __future__ import annotations
 import os
 
 # 지브리 감성 추천용 텍스트 LLM (한국어 및 JSON 성능이 뛰어난 공개 모델)
-LLM_MODEL = "Qwen/Qwen2.5-14B-Instruct"
+LLM_MODEL = "Qwen/Qwen2.5-7B-Instruct"
 
 
 def get_token() -> str:
