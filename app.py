@@ -443,310 +443,344 @@ def recommend(user_vibe: str):
 
 def build_ui() -> gr.Blocks:
     # 1. 지브리 테마 스타일 정의 (라이트 모드 강제 적용)
-    theme = gr.themes.Base().set(
-        body_background_fill="transparent",
-        body_background_fill_dark="transparent",
-        block_background_fill="transparent",
-        block_background_fill_dark="transparent",
-        input_background_fill="transparent",
-        input_background_fill_dark="transparent",
-        body_text_color="#ffffff",
-        body_text_color_dark="#ffffff",
-        block_label_text_color="rgba(255,255,255,0.6)",
-        block_label_text_color_dark="rgba(255,255,255,0.6)",
-        button_primary_background_fill="linear-gradient(135deg, #56ab2f 0%, #2e7d32 100%)",
-        button_primary_background_fill_dark="linear-gradient(135deg, #56ab2f 0%, #2e7d32 100%)",
+    theme = gr.themes.Soft(
+        primary_hue="green",
+        secondary_hue="yellow",
+        neutral_hue="stone",
+        font=[gr.themes.GoogleFont("Noto Serif KR"), gr.themes.GoogleFont("Noto Sans KR"), "sans-serif"],
+    ).set(
+        body_background_fill="#f9f3e3",
+        body_background_fill_dark="#f9f3e3",
+        block_background_fill="#fffdf5",
+        block_background_fill_dark="#fffdf5",
+        input_background_fill="#fffefa",
+        input_background_fill_dark="#fffefa",
+        body_text_color="#3d2b1f",
+        body_text_color_dark="#3d2b1f",
+        block_label_text_color="#5a7a4a",
+        block_label_text_color_dark="#5a7a4a",
+        button_primary_background_fill="linear-gradient(135deg, #6aaa5a 0%, #3d7a35 100%)",
+        button_primary_background_fill_dark="linear-gradient(135deg, #6aaa5a 0%, #3d7a35 100%)",
         button_primary_text_color="#ffffff",
         button_primary_text_color_dark="#ffffff",
-        border_color_primary="rgba(255,255,255,0.15)",
-        border_color_primary_dark="rgba(255,255,255,0.15)",
+        border_color_primary="#c8deb8",
+        border_color_primary_dark="#c8deb8",
     )
 
     css = """
-    @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@300;400;600;700&family=Outfit:wght@300;400;500;600;700;800&family=Noto+Sans+KR:wght@300;400;500;700&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@300;400;500;600;700&family=Noto+Sans+KR:wght@300;400;500;700&family=Playfair+Display:ital,wght@0,700;1,400&display=swap');
 
-    /* ─── 전체 배경 ─── */
+    /* ─── 전체 배경: 양피지/수채화 느낌 ─── */
     .gradio-container {
-        background: linear-gradient(160deg, #0d2b1a 0%, #1a4a2e 40%, #0f3624 100%) !important;
+        background-color: #f9f3e3 !important;
+        background-image:
+            radial-gradient(ellipse at 15% 20%, rgba(168,197,160,0.25) 0%, transparent 45%),
+            radial-gradient(ellipse at 85% 75%, rgba(200,168,75,0.12) 0%, transparent 40%),
+            radial-gradient(ellipse at 50% 50%, rgba(249,243,227,0.8) 0%, transparent 100%);
+        font-family: 'Noto Sans KR', sans-serif !important;
         min-height: 100vh !important;
-        font-family: 'Outfit', 'Noto Sans KR', sans-serif !important;
-    }
-    body, .gradio-container * {
-        box-sizing: border-box;
     }
 
-    /* ─── 히어로 헤더 ─── */
+    /* ─── 히어로 헤더: 지브리 숲 느낌 ─── */
     .title-section {
         text-align: center !important;
         padding: 3rem 2rem 2.5rem !important;
-        background: linear-gradient(135deg,
-            rgba(255,255,255,0.07) 0%,
-            rgba(255,255,255,0.03) 100%) !important;
-        backdrop-filter: blur(20px) !important;
-        -webkit-backdrop-filter: blur(20px) !important;
-        border-radius: 24px !important;
-        border: 1px solid rgba(255,255,255,0.12) !important;
+        background:
+            linear-gradient(160deg, #2d5a1e 0%, #4a7c35 40%, #3a6b28 100%) !important;
+        border-radius: 20px !important;
+        border: 3px solid #6aaa4a !important;
         box-shadow:
-            0 8px 32px rgba(0,0,0,0.3),
-            inset 0 1px 0 rgba(255,255,255,0.1) !important;
+            0 8px 32px rgba(45,90,30,0.3),
+            0 2px 8px rgba(0,0,0,0.1),
+            inset 0 1px 0 rgba(255,255,255,0.15) !important;
         margin-bottom: 1.5rem !important;
         position: relative !important;
         overflow: hidden !important;
     }
     .title-section::before {
-        content: '';
+        content: '🌿';
         position: absolute;
-        top: -50%;
-        left: -50%;
-        width: 200%;
-        height: 200%;
-        background: radial-gradient(ellipse at 60% 40%, rgba(76,175,80,0.12) 0%, transparent 60%),
-                    radial-gradient(ellipse at 20% 80%, rgba(212,167,87,0.08) 0%, transparent 50%);
+        font-size: 8rem;
+        opacity: 0.06;
+        top: -1rem;
+        left: -1rem;
+        transform: rotate(-20deg);
+        pointer-events: none;
+    }
+    .title-section::after {
+        content: '🍃';
+        position: absolute;
+        font-size: 7rem;
+        opacity: 0.06;
+        bottom: -1rem;
+        right: -1rem;
+        transform: rotate(30deg);
         pointer-events: none;
     }
     .title-section h1, .title-section .prose h1, .title-section h1 * {
-        color: #ffffff !important;
-        font-size: 2.8rem !important;
-        font-weight: 800 !important;
-        font-family: 'Outfit', sans-serif !important;
-        letter-spacing: -0.5px !important;
+        color: #f5edd0 !important;
+        font-size: 2.6rem !important;
+        font-weight: 700 !important;
+        font-family: 'Playfair Display', 'Noto Serif KR', serif !important;
+        letter-spacing: 0.5px !important;
         margin-bottom: 0.6rem !important;
-        text-shadow: 0 2px 20px rgba(76,175,80,0.4) !important;
+        text-shadow: 0 2px 12px rgba(0,0,0,0.3), 0 1px 3px rgba(0,0,0,0.2) !important;
         text-align: center !important;
     }
     .title-section p, .title-section .prose p, .title-section p * {
-        color: rgba(255,255,255,0.75) !important;
-        font-size: 1.05rem !important;
+        color: rgba(245,237,208,0.85) !important;
+        font-size: 1rem !important;
         font-family: 'Noto Sans KR', sans-serif !important;
         font-weight: 300 !important;
-        letter-spacing: 0.3px !important;
+        letter-spacing: 0.5px !important;
         margin: 0 !important;
         text-align: center !important;
     }
 
-    /* ─── 유리 카드 (glassmorphism) ─── */
+    /* ─── 메인 카드: 크림색 양피지 느낌 ─── */
     .main-box {
-        background: rgba(255,255,255,0.06) !important;
-        backdrop-filter: blur(16px) !important;
-        -webkit-backdrop-filter: blur(16px) !important;
-        border-radius: 20px !important;
-        border: 1px solid rgba(255,255,255,0.12) !important;
+        background: #fffdf5 !important;
+        border-radius: 16px !important;
+        border: 2px solid #c8deb8 !important;
         box-shadow:
-            0 8px 32px rgba(0,0,0,0.25),
-            inset 0 1px 0 rgba(255,255,255,0.08) !important;
+            0 4px 20px rgba(90,122,74,0.12),
+            0 1px 4px rgba(0,0,0,0.06) !important;
         padding: 1.8rem !important;
-        transition: box-shadow 0.3s ease !important;
+        position: relative !important;
+        transition: box-shadow 0.3s ease, transform 0.2s ease !important;
     }
     .main-box:hover {
         box-shadow:
-            0 12px 40px rgba(0,0,0,0.3),
-            inset 0 1px 0 rgba(255,255,255,0.1) !important;
+            0 8px 30px rgba(90,122,74,0.18),
+            0 2px 8px rgba(0,0,0,0.08) !important;
+    }
+    .main-box::before {
+        content: '';
+        position: absolute;
+        top: 0; left: 0; right: 0;
+        height: 3px;
+        background: linear-gradient(90deg, #6aaa4a, #c8a84b, #6aaa4a);
+        border-radius: 16px 16px 0 0;
+        opacity: 0.7;
     }
 
-    /* ─── 텍스트 박스 ─── */
+    /* ─── 텍스트박스 ─── */
     textarea, input[type="text"] {
-        background: rgba(255,255,255,0.08) !important;
-        color: #ffffff !important;
-        border: 1px solid rgba(255,255,255,0.2) !important;
+        background: #fffefa !important;
+        color: #3d2b1f !important;
+        border: 1.5px solid #c8deb8 !important;
         border-radius: 12px !important;
         font-family: 'Noto Sans KR', sans-serif !important;
         font-size: 0.95rem !important;
-        transition: all 0.2s ease !important;
+        line-height: 1.7 !important;
+        transition: all 0.25s ease !important;
     }
     textarea:focus, input[type="text"]:focus {
-        background: rgba(255,255,255,0.12) !important;
-        border-color: rgba(76,175,80,0.6) !important;
-        box-shadow: 0 0 0 3px rgba(76,175,80,0.15) !important;
-        outline: none !important;
+        border-color: #6aaa4a !important;
+        box-shadow: 0 0 0 3px rgba(106,170,74,0.15) !important;
+        background: #ffffff !important;
     }
     textarea::placeholder, input[type="text"]::placeholder {
-        color: rgba(255,255,255,0.35) !important;
+        color: #a89880 !important;
+        font-style: italic !important;
     }
     textarea[readonly], input[readonly] {
-        background: rgba(255,255,255,0.05) !important;
-        color: rgba(255,255,255,0.85) !important;
-        border-color: rgba(255,255,255,0.1) !important;
+        background: #f7f4ec !important;
+        color: #4a3828 !important;
+        border-color: #d5e8c5 !important;
         cursor: default !important;
     }
 
-    /* ─── 라벨 텍스트 ─── */
-    label, .label-wrap span, .block label span {
-        color: rgba(255,255,255,0.65) !important;
-        font-size: 0.85rem !important;
-        font-weight: 500 !important;
-        letter-spacing: 0.5px !important;
-        text-transform: uppercase !important;
-    }
-
-    /* ─── 마크다운 헤딩 (결과 영역) ─── */
-    .main-box .prose h3, .main-box h3 {
-        color: rgba(255,255,255,0.9) !important;
-        font-size: 1.1rem !important;
+    /* ─── 라벨 ─── */
+    label span, .label-wrap span, .block label span {
+        color: #5a7a4a !important;
+        font-size: 0.82rem !important;
         font-weight: 600 !important;
-        border-bottom: 1px solid rgba(255,255,255,0.1) !important;
-        padding-bottom: 0.5rem !important;
-        margin-bottom: 1rem !important;
+        letter-spacing: 0.8px !important;
+        text-transform: uppercase !important;
+        font-family: 'Noto Sans KR', sans-serif !important;
     }
 
-    /* ─── 버튼 ─── */
+    /* ─── 버튼: 지브리 숲 초록 ─── */
     .submit-btn {
-        background: linear-gradient(135deg, #56ab2f 0%, #2e7d32 50%, #1b5e20 100%) !important;
-        color: #ffffff !important;
+        background: linear-gradient(135deg, #6aaa5a 0%, #3d7a35 60%, #2d5a25 100%) !important;
+        color: #f5edd0 !important;
         border: none !important;
         border-radius: 14px !important;
-        font-size: 1.05rem !important;
+        font-size: 1.1rem !important;
         font-weight: 700 !important;
-        font-family: 'Outfit', sans-serif !important;
-        letter-spacing: 0.5px !important;
-        padding: 0.9rem 2rem !important;
+        font-family: 'Noto Serif KR', serif !important;
+        letter-spacing: 1px !important;
+        padding: 0.85rem 2rem !important;
         box-shadow:
-            0 4px 20px rgba(46,125,50,0.4),
+            0 4px 16px rgba(61,122,53,0.35),
+            0 1px 3px rgba(0,0,0,0.15),
             inset 0 1px 0 rgba(255,255,255,0.2) !important;
         transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) !important;
         position: relative !important;
         overflow: hidden !important;
     }
-    .submit-btn::before {
+    .submit-btn::after {
         content: '';
         position: absolute;
         top: 0; left: -100%;
-        width: 100%; height: 100%;
-        background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
-        transition: left 0.5s ease;
+        width: 60%; height: 100%;
+        background: linear-gradient(90deg, transparent, rgba(255,255,255,0.18), transparent);
+        transition: left 0.55s ease;
     }
-    .submit-btn:hover::before { left: 100%; }
+    .submit-btn:hover::after { left: 150%; }
     .submit-btn:hover {
-        transform: translateY(-3px) scale(1.01) !important;
+        transform: translateY(-3px) scale(1.02) !important;
         box-shadow:
-            0 8px 30px rgba(46,125,50,0.5),
+            0 8px 24px rgba(61,122,53,0.45),
+            0 2px 6px rgba(0,0,0,0.15),
             inset 0 1px 0 rgba(255,255,255,0.25) !important;
     }
     .submit-btn:active {
-        transform: translateY(-1px) !important;
+        transform: translateY(-1px) scale(1.00) !important;
     }
 
     /* ─── 어코디언 (가이드) ─── */
     .guide-accordion {
-        background: rgba(255,255,255,0.04) !important;
-        border: 1px solid rgba(255,255,255,0.1) !important;
-        border-radius: 14px !important;
-        margin-top: 0.8rem !important;
+        background: #f1ede0 !important;
+        border: 1.5px solid #c8deb8 !important;
+        border-radius: 12px !important;
+        margin-top: 0.6rem !important;
         margin-bottom: 1.2rem !important;
-        backdrop-filter: blur(10px) !important;
-    }
-    .guide-accordion button {
-        color: rgba(255,255,255,0.7) !important;
-        font-size: 0.9rem !important;
     }
     .guide-accordion .prose p, .guide-accordion p {
-        color: rgba(255,255,255,0.65) !important;
-        font-size: 0.9rem !important;
+        color: #5a4a38 !important;
+        font-size: 0.92rem !important;
+        line-height: 1.75 !important;
     }
     .guide-accordion .prose strong, .guide-accordion strong {
-        color: rgba(255,255,255,0.85) !important;
+        color: #3d5a30 !important;
     }
 
     /* ─── Examples 버튼 ─── */
     .examples-holder table td button,
     .gr-samples-table td button {
-        background: rgba(255,255,255,0.06) !important;
-        color: rgba(255,255,255,0.75) !important;
-        border: 1px solid rgba(255,255,255,0.12) !important;
+        background: #f1ede0 !important;
+        color: #4a6a38 !important;
+        border: 1.5px solid #c8deb8 !important;
         border-radius: 8px !important;
+        font-size: 0.82rem !important;
+        font-family: 'Noto Sans KR', sans-serif !important;
         transition: all 0.2s ease !important;
-        font-size: 0.85rem !important;
+        padding: 0.3rem 0.7rem !important;
     }
     .examples-holder table td button:hover,
     .gr-samples-table td button:hover {
-        background: rgba(76,175,80,0.2) !important;
-        border-color: rgba(76,175,80,0.4) !important;
-        color: #ffffff !important;
+        background: #d8eecc !important;
+        border-color: #6aaa4a !important;
+        color: #2d5a20 !important;
+        transform: translateY(-1px) !important;
     }
 
-    /* ─── 감성 코스 타임라인 ─── */
+    /* ─── 결과 섹션 헤딩 ─── */
+    .main-box .prose h3 {
+        color: #3d5a2a !important;
+        font-family: 'Noto Serif KR', serif !important;
+        font-size: 1.1rem !important;
+        font-weight: 700 !important;
+        padding-bottom: 0.5rem !important;
+        border-bottom: 2px dashed #c8deb8 !important;
+        margin-bottom: 1rem !important;
+    }
+
+    /* ─── 코스 타임라인 ─── */
     .course-step {
         display: flex;
         align-items: flex-start;
         margin-bottom: 1.4rem;
         position: relative;
-        animation: fadeInUp 0.4s ease both;
+        animation: ghibliRise 0.5s ease both;
     }
-    .course-step:nth-child(2) { animation-delay: 0.1s; }
-    .course-step:nth-child(3) { animation-delay: 0.2s; }
-    @keyframes fadeInUp {
-        from { opacity: 0; transform: translateY(12px); }
-        to   { opacity: 1; transform: translateY(0); }
+    .course-step:nth-child(1) { animation-delay: 0.05s; }
+    .course-step:nth-child(2) { animation-delay: 0.15s; }
+    .course-step:nth-child(3) { animation-delay: 0.25s; }
+    @keyframes ghibliRise {
+        from { opacity: 0; transform: translateY(16px) scale(0.97); }
+        to   { opacity: 1; transform: translateY(0) scale(1); }
     }
     .course-step:not(:last-child)::after {
         content: '';
         position: absolute;
-        left: 22px;
-        top: 46px;
+        left: 21px;
+        top: 44px;
         bottom: -20px;
         width: 2px;
-        background: linear-gradient(to bottom, rgba(76,175,80,0.6), rgba(76,175,80,0.1));
+        background: repeating-linear-gradient(
+            to bottom,
+            #6aaa4a 0px, #6aaa4a 4px,
+            transparent 4px, transparent 10px
+        );
+        opacity: 0.5;
     }
     .step-num {
-        background: linear-gradient(135deg, #56ab2f, #2e7d32) !important;
-        color: white !important;
+        background: linear-gradient(135deg, #6aaa5a, #3d7a35) !important;
+        color: #f5edd0 !important;
         font-weight: 700 !important;
-        width: 44px !important;
-        height: 44px !important;
+        width: 42px !important;
+        height: 42px !important;
         border-radius: 50% !important;
         display: flex !important;
         align-items: center !important;
         justify-content: center !important;
-        font-size: 0.85rem !important;
+        font-size: 0.9rem !important;
+        font-family: 'Noto Serif KR', serif !important;
         flex-shrink: 0 !important;
-        box-shadow: 0 4px 12px rgba(46,125,50,0.4), 0 0 0 3px rgba(76,175,80,0.15) !important;
+        box-shadow:
+            0 3px 10px rgba(61,122,53,0.35),
+            0 0 0 3px rgba(106,170,74,0.2) !important;
         z-index: 2 !important;
         position: relative !important;
     }
     .step-content {
         margin-left: 1.2rem !important;
-        background: rgba(255,255,255,0.06) !important;
-        padding: 1rem 1.4rem !important;
+        background: #fffdf5 !important;
+        padding: 0.9rem 1.4rem !important;
         border-radius: 14px !important;
-        border: 1px solid rgba(255,255,255,0.1) !important;
+        border: 1.5px solid #d8eecc !important;
         flex-grow: 1 !important;
-        backdrop-filter: blur(8px) !important;
-        transition: all 0.3s ease !important;
+        transition: all 0.25s ease !important;
+        box-shadow: 0 2px 8px rgba(90,122,74,0.07) !important;
     }
     .step-content:hover {
         transform: translateX(6px) !important;
-        background: rgba(255,255,255,0.09) !important;
-        border-color: rgba(76,175,80,0.35) !important;
-        box-shadow: 0 4px 20px rgba(0,0,0,0.15) !important;
+        border-color: #6aaa4a !important;
+        background: #f5fbf0 !important;
+        box-shadow: 0 4px 16px rgba(90,122,74,0.14) !important;
     }
     .step-place {
-        color: #7dde8b !important;
-        font-size: 1.05rem !important;
+        color: #2d5a20 !important;
+        font-size: 1rem !important;
         font-weight: 700 !important;
-        margin: 0 0 0.3rem 0 !important;
         font-family: 'Noto Serif KR', serif !important;
+        margin: 0 0 0.3rem 0 !important;
     }
     .step-desc {
-        color: rgba(255,255,255,0.7) !important;
-        font-size: 0.9rem !important;
+        color: #6a5040 !important;
+        font-size: 0.88rem !important;
         margin: 0 !important;
-        line-height: 1.6 !important;
+        line-height: 1.65 !important;
+        font-family: 'Noto Sans KR', sans-serif !important;
     }
-
-    /* ─── 섹션 헤딩 마크다운 ─── */
-    .prose h3 { color: rgba(255,255,255,0.88) !important; }
 
     /* ─── 이미지 영역 ─── */
     .main-box img {
         border-radius: 14px !important;
-        box-shadow: 0 8px 30px rgba(0,0,0,0.4) !important;
+        box-shadow: 0 6px 24px rgba(90,122,74,0.2), 0 2px 6px rgba(0,0,0,0.1) !important;
+        border: 2px solid #c8deb8 !important;
     }
 
     /* ─── 스크롤바 ─── */
     ::-webkit-scrollbar { width: 6px; }
-    ::-webkit-scrollbar-track { background: rgba(255,255,255,0.05); }
-    ::-webkit-scrollbar-thumb { background: rgba(76,175,80,0.4); border-radius: 3px; }
+    ::-webkit-scrollbar-track { background: #f1ede0; }
+    ::-webkit-scrollbar-thumb { background: #a8c898; border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: #6aaa4a; }
 
-    /* ─── 숨김 처리 ─── */
+    /* ─── 숨김 ─── */
     .meta-text, [class*="meta-text"], .timer, .duration,
     .eta-bar, [class*="eta-bar"], [class*="timer"] {
         display: none !important;
