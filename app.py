@@ -49,11 +49,15 @@ SYSTEM_PROMPT = (
     "2. 이 분위기와 가장 잘 매치되는 스튜디오 지브리 애니메이션 작품을 하나 선정한다. 반드시 실제 스튜디오 지브리 대표작(예: 이웃집 토토로, 센과 치히로의 행방불명, 마녀 배달부 키키, 하울의 움직이는 성, 천공의 성 라퓨타, 모노노케 히메, 벼랑 위의 포뇨, 귀를 기울이면, 바람계곡의 나우시카, 마루 밑 아리에티 등) 중에서만 선택해야 하며, 신카이 마코토 작품이나 다른 제작사 애니메이션(예: 너의 이름은, 목소리의 형태 등)은 절대 제외하라.\n"
     "3. 그 지브리 작품의 감성을 고스란히 느낄 수 있는 '실제 전 세계 여행지(도시, 마을, 혹은 특정 장소)' 1곳을 추천한다.\n"
     "   ※ destination과 half_day_course의 place 필드에는 반드시 영문 지명을 괄호 () 안에 함께 표기해야 한다. (예: 일본 교토 아라시야마 (Arashiyama, Kyoto))\n"
-    "4. 이 장소가 선정된 이유와 지브리 작품의 어떤 장면/감성과 연결되는지 따뜻하고 감성적인 어조로 설명하는 '감성 코멘트'를 작성한다.\n"
-    "5. 추천된 장소를 중심으로 도보 또는 가볍게 이동 가능한 3단계 반나절 여행 동선(코스)을 기획한다. 각 단계는 장소 이름과 그곳에서 느낄 수 있는 감성적 활동을 포함해야 한다.\n\n"
+    "4. 이 분위기에 어울리는 낭만적이고 직관적인 영문 감성 라벨(vibe_name)을 정한다. (예: Ocean Waves Vibe, Forest Whispers Vibe, Emerald Valley Vibe, Sunset Breeze Vibe 등)\n"
+    "5. 이 분위기와 추천 장소와의 매칭률(match_percentage)을 90에서 98 사이의 정수형 숫자로 나타낸다.\n"
+    "6. 이 장소가 선정된 이유와 지브리 작품의 어떤 장면/감성과 연결되는지 따뜻하고 감성적인 어조로 설명하는 '감성 코멘트'를 작성한다.\n"
+    "7. 추천된 장소를 중심으로 도보 또는 가볍게 이동 가능한 3단계 반나절 여행 동선(코스)을 기획한다. 각 단계는 장소 이름과 그곳에서 느낄 수 있는 감성적 활동을 포함해야 한다.\n\n"
     "반드시 아래 JSON 스키마 형식으로만 응답해야 하며, 다른 여담이나 설명, markdown 코드 블록 기호(```json 등)는 절대 포함하지 마라. JSON 객체로만 출력하라.\n"
     "{\n"
     '  "destination": "추천 목적지 한국어명과 영문명. 반드시 영문명을 괄호 () 안에 포함할 것 (예: 일본 가마쿠라 (Kamakura, Japan))",\n'
+    '  "vibe_name": "이 분위기에 어울리는 낭만적인 감성 라벨 영문명 (예: Ocean Waves Vibe)",\n'
+    '  "match_percentage": 95,\n'
     '  "matching_ghibli_work": "매칭되는 지브리 애니메이션 제목 (예: 이웃집 토토로)",\n'
     '  "vibe_comment": "따뜻하고 서정적인 어조의 감성 코멘트 (2-3문장)",\n'
     '  "half_day_course": [\n'
@@ -92,9 +96,10 @@ GHIBLI_FALLBACK_IMAGES = {
 }
 _DEFAULT_FALLBACK_IMAGE = "https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=800"
 
-
 FALLBACK_RECOMMENDATION = {
     "destination": "일본 유후인 온천마을 (Yufuin)",
+    "vibe_name": "Forest Whispers Vibe",
+    "match_percentage": 95,
     "matching_ghibli_work": "이웃집 토토로 (My Neighbor Totoro)",
     "vibe_comment": "푸르른 긴린코 호수와 아기자기한 상점들이 늘어선 골목길을 걷다 보면, 금방이라도 토토로가 살고 있는 신비한 고목나무 숲이 나타날 것 같은 아늑한 감성을 줍니다.",
     "half_day_course": [
@@ -338,15 +343,34 @@ def get_real_image_wiki(query: str) -> str | None:
     return None
 
 
-def recommend(user_vibe: str):
+def get_watercolor_fallback(place_name: str) -> str:
+    name_lower = place_name.lower()
+    if any(x in name_lower for x in ["temple", "shrine", "gate", "pagoda", "wat", "ji", "절", "사원", "신사", "사찰", "대불", "성당", "교회"]):
+        return "https://images.unsplash.com/photo-1493976040374-85c8e12f0c0e?w=800"
+    if any(x in name_lower for x in ["beach", "sea", "ocean", "coast", "shore", "water", "bay", "port", "harbor", "바다", "해변", "해수욕장", "연안", "포구", "항구"]):
+        return "https://images.unsplash.com/photo-1505118380757-91f5f5632de0?w=800"
+    if any(x in name_lower for x in ["forest", "park", "mountain", "wood", "garden", "hill", "valley", "lake", "pond", "숲", "공원", "산", "정원", "동산", "계곡", "호수", "연못"]):
+        return "https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=800"
+    if any(x in name_lower for x in ["street", "market", "alley", "road", "dori", "town", "village", "shop", "cafe", "station", "거리", "시장", "골목", "마을", "상점", "카페", "역"]):
+        return "https://images.unsplash.com/photo-1528164344705-47542687000d?w=800"
+    return "https://images.unsplash.com/photo-1467003909585-2f8a72700288?w=800"
+
+
+def get_empty_state_html() -> str:
+    return """
+    <div class="empty-state-container">
+        <div class="empty-state-box">
+            <div class="empty-icon">🍃</div>
+            <h3>어떤 분위기의 여행을 떠나고 싶으신가요?</h3>
+            <p>위의 검색창에 조용한 숲속 마을, 바다가 보이는 골목길 등 원하시는 분위기를 자유롭게 적어 보세요.</p>
+        </div>
+    </div>
+    """
+
+
+def recommend(user_vibe: str) -> str:
     if not user_vibe or not user_vibe.strip():
-        return (
-            "⚠️ 입력 필요",
-            "⚠️ 입력 필요",
-            "원하는 여행 분위기를 텍스트 창에 입력해 주세요.",
-            "<p style='color: #888;'>분위기 추천을 입력하시면 여기에 코스가 표시됩니다.</p>",
-            None
-        )
+        return get_empty_state_html()
     
     try:
         client = InferenceClient(token=get_token(), timeout=15)
@@ -365,9 +389,7 @@ def recommend(user_vibe: str):
         import traceback
         err_msg = f"Error during LLM call: {type(e).__name__}: {str(e)}\n{traceback.format_exc()}"
         print(err_msg)
-        # fallback
         
-        # 에러 원인 분석 (토큰 누락 여부)
         env_keys = [k for k in os.environ.keys() if "HF" in k or "TOKEN" in k]
         is_token_missing = "HF_TOKEN" in str(e) or "환경변수가 비어 있습니다" in str(e)
         if is_token_missing:
@@ -384,62 +406,194 @@ def recommend(user_vibe: str):
             
         result = {
             "destination": FALLBACK_RECOMMENDATION["destination"],
+            "vibe_name": FALLBACK_RECOMMENDATION["vibe_name"],
+            "match_percentage": FALLBACK_RECOMMENDATION["match_percentage"],
             "matching_ghibli_work": FALLBACK_RECOMMENDATION["matching_ghibli_work"],
             "vibe_comment": f"{debug_info}{FALLBACK_RECOMMENDATION['vibe_comment']}",
             "half_day_course": FALLBACK_RECOMMENDATION["half_day_course"]
         }
         
     destination = result.get("destination", "알 수 없는 목적지")
+    vibe_name = result.get("vibe_name", "Ghibli Vibe")
+    match_percentage = result.get("match_percentage", 95)
     ghibli_work = result.get("matching_ghibli_work", "지브리 작품")
     vibe_comment = result.get("vibe_comment", "")
-    
     course_list = result.get("half_day_course", [])
-    course_html = ""
-    for item in course_list:
-        step = item.get("step", 1)
-        place = item.get("place", "")
-        desc = item.get("description", "")
-        
-        course_html += f"""
-        <div class="course-step">
-            <div class="step-num">Step {step}</div>
-            <div class="step-content">
-                <h4 class="step-place">{place}</h4>
-                <p class="step-desc">{desc}</p>
-            </div>
-        </div>
-        """
     
-    # 📸 목적지에 맞는 실제 이미지 가져오기 (Wikipedia → 코스 장소 → 지브리별 Fallback 순)
-    image_result = None
+    # 📸 목적지에 맞는 실제 이미지 가져오기
+    main_image = None
     if destination and destination not in ("알 수 없는 목적지", "⚠️ 입력 필요"):
         try:
-            # 1차: 목적지명으로 Wikipedia 검색
-            image_result = get_real_image_wiki(destination)
+            main_image = get_real_image_wiki(destination)
         except Exception as img_err:
             print(f"Error fetching destination image: {img_err}")
 
-    if not image_result and course_list:
-        # 2차: 코스 장소들을 순서대로 시도 (영문명 포함 가능성 높음)
+    if not main_image and course_list:
         for course_item in course_list:
             try:
                 place_name = course_item.get("place", "")
                 if place_name:
-                    image_result = get_real_image_wiki(place_name)
-                    if image_result:
+                    main_image = get_real_image_wiki(place_name)
+                    if main_image:
                         break
             except Exception as img_err2:
                 print(f"Error fetching course place image: {img_err2}")
 
-    if not image_result:
-        # 3차: 지브리 작품별 감성에 맞는 Fallback 이미지 선택
-        image_result = _DEFAULT_FALLBACK_IMAGE
+    if not main_image:
+        main_image = _DEFAULT_FALLBACK_IMAGE
         for work_key, url in GHIBLI_FALLBACK_IMAGES.items():
             if work_key in ghibli_work:
-                image_result = url
+                main_image = url
                 break
+                
+    # 📸 각 코스 단계의 이미지 가져오기
+    step_images = []
+    for step_item in course_list:
+        place_name = step_item.get("place", "")
+        img_url = None
+        if place_name:
+            try:
+                img_url = get_real_image_wiki(place_name)
+            except Exception as e:
+                print(f"Error fetching image for step place '{place_name}': {e}")
+        if not img_url:
+            img_url = get_watercolor_fallback(place_name)
+        step_images.append(img_url)
+
+    # 코스 스텝 HTML 렌더링
+    steps_html = ""
+    for idx, item in enumerate(course_list):
+        step = item.get("step", idx + 1)
+        place = item.get("place", "")
+        desc = item.get("description", "")
+        img = step_images[idx] if idx < len(step_images) else get_watercolor_fallback(place)
+        
+        display_place = re.sub(r'\(.*?\)', '', place).strip()
+        
+        arrow_html = ""
+        if idx < len(course_list) - 1:
+            arrow_html = """
+            <div class="step-arrow">
+                <svg viewBox="0 0 24 24" width="32" height="32" fill="none" stroke="#a4b494" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="5" y1="12" x2="19" y2="12"></line>
+                    <polyline points="12 5 19 12 12 19"></polyline>
+                </svg>
+            </div>
+            """
             
-    return destination, ghibli_work, vibe_comment, course_html, image_result
+        steps_html += f"""
+        <div class="step-col animate-step" style="animation-delay: {idx * 0.15}s;">
+            <div class="step-img-wrapper">
+                <img src="{img}" alt="{display_place}" class="step-circle-img" />
+            </div>
+            <h3 class="step-title">Step {step}: {display_place}</h3>
+            <p class="step-desc">{desc}</p>
+        </div>
+        {arrow_html}
+        """
+
+    result_html = f"""
+    <div class="result-container animate-fade-in">
+        <!-- Recommendation Card -->
+        <div class="recommendation-card">
+            <div class="rec-left">
+                <div class="circle-image-wrapper">
+                    <img src="{main_image}" alt="{destination}" class="circle-img" />
+                </div>
+                <div class="vibe-label">{vibe_name}</div>
+                <div class="match-badge">Match: {match_percentage}%</div>
+            </div>
+            <div class="rec-right">
+                <div class="rec-badge-wrap">
+                    <span class="rec-badge">Recommendation</span>
+                </div>
+                <h2 class="rec-title">{destination}</h2>
+                <p class="rec-work-info">🎬 매칭 지브리 작품: <strong>{ghibli_work}</strong></p>
+                <p class="rec-desc">{vibe_comment}</p>
+            </div>
+        </div>
+
+        <!-- Timeline Section -->
+        <div class="timeline-section">
+            <div class="timeline-badge-wrap">
+                <span class="timeline-badge">3-step walking timeline course</span>
+            </div>
+            <div class="timeline-card">
+                <!-- Leafy corner illustrations -->
+                <div class="leaf-corner tl">
+                    <svg viewBox="0 0 100 100" width="80" height="80">
+                        <path d="M 10 10 C 25 15, 35 25, 40 45 C 38 48, 30 40, 25 32 C 15 22, 10 15, 10 10 Z" fill="#849b73" opacity="0.85"/>
+                        <path d="M 10 10 C 15 25, 25 35, 45 40 C 48 38, 40 30, 32 25 C 22 15, 15 10, 10 10 Z" fill="#849b73" opacity="0.85"/>
+                        <path d="M 10 10 C 20 20, 30 30, 35 35" stroke="#3d2b1f" stroke-width="2" fill="none"/>
+                        <circle cx="28" cy="18" r="3" fill="#a4b494"/>
+                        <circle cx="18" cy="28" r="3" fill="#a4b494"/>
+                    </svg>
+                </div>
+                <div class="leaf-corner tr">
+                    <svg viewBox="0 0 100 100" width="80" height="80" style="transform: scaleX(-1);">
+                        <path d="M 10 10 C 25 15, 35 25, 40 45 C 38 48, 30 40, 25 32 C 15 22, 10 15, 10 10 Z" fill="#849b73" opacity="0.85"/>
+                        <path d="M 10 10 C 15 25, 25 35, 45 40 C 48 38, 40 30, 32 25 C 22 15, 15 10, 10 10 Z" fill="#849b73" opacity="0.85"/>
+                        <path d="M 10 10 C 20 20, 30 30, 35 35" stroke="#3d2b1f" stroke-width="2" fill="none"/>
+                        <circle cx="28" cy="18" r="3" fill="#a4b494"/>
+                        <circle cx="18" cy="28" r="3" fill="#a4b494"/>
+                    </svg>
+                </div>
+                <div class="leaf-corner bl">
+                    <svg viewBox="0 0 100 100" width="80" height="80" style="transform: scaleY(-1);">
+                        <path d="M 10 10 C 25 15, 35 25, 40 45 C 38 48, 30 40, 25 32 C 15 22, 10 15, 10 10 Z" fill="#849b73" opacity="0.85"/>
+                        <path d="M 10 10 C 15 25, 25 35, 45 40 C 48 38, 40 30, 32 25 C 22 15, 15 10, 10 10 Z" fill="#849b73" opacity="0.85"/>
+                        <path d="M 10 10 C 20 20, 30 30, 35 35" stroke="#3d2b1f" stroke-width="2" fill="none"/>
+                        <circle cx="28" cy="18" r="3" fill="#a4b494"/>
+                        <circle cx="18" cy="28" r="3" fill="#a4b494"/>
+                    </svg>
+                </div>
+                <div class="leaf-corner br">
+                    <svg viewBox="0 0 100 100" width="80" height="80" style="transform: scale(-1);">
+                        <path d="M 10 10 C 25 15, 35 25, 40 45 C 38 48, 30 40, 25 32 C 15 22, 10 15, 10 10 Z" fill="#849b73" opacity="0.85"/>
+                        <path d="M 10 10 C 15 25, 25 35, 45 40 C 48 38, 40 30, 32 25 C 22 15, 15 10, 10 10 Z" fill="#849b73" opacity="0.85"/>
+                        <path d="M 10 10 C 20 20, 30 30, 35 35" stroke="#3d2b1f" stroke-width="2" fill="none"/>
+                        <circle cx="28" cy="18" r="3" fill="#a4b494"/>
+                        <circle cx="18" cy="28" r="3" fill="#a4b494"/>
+                    </svg>
+                </div>
+                
+                <!-- Totoro spirits -->
+                <div class="totoro-spirit top-right">
+                    <svg viewBox="0 0 50 50" width="45" height="45">
+                        <path d="M 25 10 C 22 10, 21 13, 21 16 C 18 17, 15 21, 15 26 C 15 32, 19 36, 25 36 C 31 36, 35 32, 35 26 C 35 21, 32 17, 29 16 C 29 13, 28 10, 25 10 Z" fill="#788b6c"/>
+                        <path d="M 21 16 L 22 10 L 23 15 M 29 16 L 28 10 L 27 15" stroke="#788b6c" stroke-width="2" stroke-linecap="round"/>
+                        <circle cx="22" cy="22" r="1.5" fill="#ffffff"/>
+                        <circle cx="28" cy="22" r="1.5" fill="#ffffff"/>
+                        <circle cx="22" cy="22" r="0.5" fill="#000000"/>
+                        <circle cx="28" cy="22" r="0.5" fill="#000000"/>
+                    </svg>
+                </div>
+                <div class="totoro-spirit bottom-center">
+                    <svg viewBox="0 0 100 50" width="90" height="45">
+                        <g transform="translate(10, 5)">
+                            <path d="M 25 10 C 22 10, 21 13, 21 16 C 18 17, 15 21, 15 26 C 15 32, 19 36, 25 36 C 31 36, 35 32, 35 26 C 35 21, 32 17, 29 16 C 29 13, 28 10, 25 10 Z" fill="#889c7c"/>
+                            <path d="M 21 16 L 22 10 L 23 15 M 29 16 L 28 10 L 27 15" stroke="#889c7c" stroke-width="2" stroke-linecap="round"/>
+                            <circle cx="22" cy="22" r="1.5" fill="#ffffff"/>
+                            <circle cx="28" cy="22" r="1.5" fill="#ffffff"/>
+                        </g>
+                        <g transform="translate(45, 12) scale(0.8)">
+                            <path d="M 25 10 C 22 10, 21 13, 21 16 C 18 17, 15 21, 15 26 C 15 32, 19 36, 25 36 C 31 36, 35 32, 35 26 C 35 21, 32 17, 29 16 C 29 13, 28 10, 25 10 Z" fill="#98ac8c"/>
+                            <path d="M 21 16 L 22 10 L 23 15 M 29 16 L 28 10 L 27 15" stroke="#98ac8c" stroke-width="2" stroke-linecap="round"/>
+                            <circle cx="22" cy="22" r="1.5" fill="#ffffff"/>
+                            <circle cx="28" cy="22" r="1.5" fill="#ffffff"/>
+                        </g>
+                    </svg>
+                </div>
+
+                <div class="steps-container">
+                    {steps_html}
+                </div>
+            </div>
+        </div>
+    </div>
+    """
+    return result_html
+
 
 def build_ui() -> gr.Blocks:
     # 1. 지브리 테마 스타일 정의 (라이트 모드 강제 적용)
@@ -449,406 +603,544 @@ def build_ui() -> gr.Blocks:
         neutral_hue="stone",
         font=[gr.themes.GoogleFont("Noto Serif KR"), gr.themes.GoogleFont("Noto Sans KR"), "sans-serif"],
     ).set(
-        body_background_fill="#f9f3e3",
-        body_background_fill_dark="#f9f3e3",
+        body_background_fill="#fcfaf2",
+        body_background_fill_dark="#fcfaf2",
         block_background_fill="#fffdf5",
         block_background_fill_dark="#fffdf5",
-        input_background_fill="#fffefa",
-        input_background_fill_dark="#fffefa",
+        input_background_fill="#ffffff",
+        input_background_fill_dark="#ffffff",
         body_text_color="#3d2b1f",
         body_text_color_dark="#3d2b1f",
         block_label_text_color="#5a7a4a",
         block_label_text_color_dark="#5a7a4a",
-        button_primary_background_fill="linear-gradient(135deg, #6aaa5a 0%, #3d7a35 100%)",
-        button_primary_background_fill_dark="linear-gradient(135deg, #6aaa5a 0%, #3d7a35 100%)",
-        button_primary_text_color="#ffffff",
-        button_primary_text_color_dark="#ffffff",
-        border_color_primary="#c8deb8",
-        border_color_primary_dark="#c8deb8",
+        button_primary_background_fill="linear-gradient(135deg, #ebdcb9 0%, #e2d4b7 100%)",
+        button_primary_background_fill_dark="linear-gradient(135deg, #ebdcb9 0%, #e2d4b7 100%)",
+        button_primary_text_color="#3d2b1f",
+        button_primary_text_color_dark="#3d2b1f",
+        border_color_primary="#a3b899",
+        border_color_primary_dark="#a3b899",
     )
 
     css = """
     @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@300;400;500;600;700&family=Noto+Sans+KR:wght@300;400;500;700&family=Playfair+Display:ital,wght@0,700;1,400&display=swap');
 
-    /* ─── 전체 배경: 양피지/수채화 느낌 ─── */
+    /* --- Base reset & Background --- */
     .gradio-container {
-        background-color: #f9f3e3 !important;
+        background-color: #fcfaf2 !important;
         background-image:
-            radial-gradient(ellipse at 15% 20%, rgba(168,197,160,0.25) 0%, transparent 45%),
-            radial-gradient(ellipse at 85% 75%, rgba(200,168,75,0.12) 0%, transparent 40%),
-            radial-gradient(ellipse at 50% 50%, rgba(249,243,227,0.8) 0%, transparent 100%);
+            radial-gradient(ellipse at 15% 20%, rgba(168,197,160,0.15) 0%, transparent 45%),
+            radial-gradient(ellipse at 85% 75%, rgba(200,168,75,0.08) 0%, transparent 40%),
+            radial-gradient(ellipse at 50% 50%, rgba(252,250,242,0.8) 0%, transparent 100%) !important;
         font-family: 'Noto Sans KR', sans-serif !important;
         min-height: 100vh !important;
+        padding: 0 1rem 3rem !important;
     }
-
-    /* ─── 히어로 헤더: 지브리 숲 느낌 ─── */
-    .title-section {
-        text-align: center !important;
-        padding: 3rem 2rem 2.5rem !important;
-        background:
-            linear-gradient(160deg, #2d5a1e 0%, #4a7c35 40%, #3a6b28 100%) !important;
-        border-radius: 20px !important;
-        border: 3px solid #6aaa4a !important;
-        box-shadow:
-            0 8px 32px rgba(45,90,30,0.3),
-            0 2px 8px rgba(0,0,0,0.1),
-            inset 0 1px 0 rgba(255,255,255,0.15) !important;
-        margin-bottom: 1.5rem !important;
-        position: relative !important;
-        overflow: hidden !important;
-    }
-    .title-section::before {
-        content: '🌿';
-        position: absolute;
-        font-size: 8rem;
-        opacity: 0.06;
-        top: -1rem;
-        left: -1rem;
-        transform: rotate(-20deg);
-        pointer-events: none;
-    }
-    .title-section::after {
-        content: '🍃';
-        position: absolute;
-        font-size: 7rem;
-        opacity: 0.06;
-        bottom: -1rem;
-        right: -1rem;
-        transform: rotate(30deg);
-        pointer-events: none;
-    }
-    .title-section h1, .title-section .prose h1, .title-section h1 * {
-        color: #f5edd0 !important;
-        font-size: 2.6rem !important;
-        font-weight: 700 !important;
-        font-family: 'Playfair Display', 'Noto Serif KR', serif !important;
-        letter-spacing: 0.5px !important;
-        margin-bottom: 0.6rem !important;
-        text-shadow: 0 2px 12px rgba(0,0,0,0.3), 0 1px 3px rgba(0,0,0,0.2) !important;
-        text-align: center !important;
-    }
-    .title-section p, .title-section .prose p, .title-section p * {
-        color: rgba(245,237,208,0.85) !important;
-        font-size: 1rem !important;
-        font-family: 'Noto Sans KR', sans-serif !important;
-        font-weight: 300 !important;
-        letter-spacing: 0.5px !important;
-        margin: 0 !important;
-        text-align: center !important;
-    }
-
-    /* ─── 메인 카드: 크림색 양피지 느낌 ─── */
-    .main-box {
-        background: #fffdf5 !important;
-        border-radius: 16px !important;
-        border: 2px solid #c8deb8 !important;
-        box-shadow:
-            0 4px 20px rgba(90,122,74,0.12),
-            0 1px 4px rgba(0,0,0,0.06) !important;
-        padding: 1.8rem !important;
-        position: relative !important;
-        transition: box-shadow 0.3s ease, transform 0.2s ease !important;
-    }
-    .main-box:hover {
-        box-shadow:
-            0 8px 30px rgba(90,122,74,0.18),
-            0 2px 8px rgba(0,0,0,0.08) !important;
-    }
-    .main-box::before {
-        content: '';
-        position: absolute;
-        top: 0; left: 0; right: 0;
-        height: 3px;
-        background: linear-gradient(90deg, #6aaa4a, #c8a84b, #6aaa4a);
-        border-radius: 16px 16px 0 0;
-        opacity: 0.7;
-    }
-
-    /* ─── 텍스트박스 ─── */
-    textarea, input[type="text"] {
-        background: #fffefa !important;
-        color: #3d2b1f !important;
-        border: 1.5px solid #c8deb8 !important;
-        border-radius: 12px !important;
-        font-family: 'Noto Sans KR', sans-serif !important;
-        font-size: 0.95rem !important;
-        line-height: 1.7 !important;
-        transition: all 0.25s ease !important;
-    }
-    textarea:focus, input[type="text"]:focus {
-        border-color: #6aaa4a !important;
-        box-shadow: 0 0 0 3px rgba(106,170,74,0.15) !important;
-        background: #ffffff !important;
-    }
-    textarea::placeholder, input[type="text"]::placeholder {
-        color: #a89880 !important;
-        font-style: italic !important;
-    }
-    textarea[readonly], input[readonly] {
-        background: #f7f4ec !important;
-        color: #4a3828 !important;
-        border-color: #d5e8c5 !important;
-        cursor: default !important;
-    }
-
-    /* ─── 라벨 ─── */
-    label span, .label-wrap span, .block label span {
-        color: #5a7a4a !important;
-        font-size: 0.82rem !important;
-        font-weight: 600 !important;
-        letter-spacing: 0.8px !important;
-        text-transform: uppercase !important;
-        font-family: 'Noto Sans KR', sans-serif !important;
-    }
-
-    /* ─── 버튼: 지브리 숲 초록 ─── */
-    .submit-btn {
-        background: linear-gradient(135deg, #6aaa5a 0%, #3d7a35 60%, #2d5a25 100%) !important;
-        color: #f5edd0 !important;
-        border: none !important;
-        border-radius: 14px !important;
-        font-size: 1.1rem !important;
-        font-weight: 700 !important;
-        font-family: 'Noto Serif KR', serif !important;
-        letter-spacing: 1px !important;
-        padding: 0.85rem 2rem !important;
-        box-shadow:
-            0 4px 16px rgba(61,122,53,0.35),
-            0 1px 3px rgba(0,0,0,0.15),
-            inset 0 1px 0 rgba(255,255,255,0.2) !important;
-        transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) !important;
-        position: relative !important;
-        overflow: hidden !important;
-    }
-    .submit-btn::after {
-        content: '';
-        position: absolute;
-        top: 0; left: -100%;
-        width: 60%; height: 100%;
-        background: linear-gradient(90deg, transparent, rgba(255,255,255,0.18), transparent);
-        transition: left 0.55s ease;
-    }
-    .submit-btn:hover::after { left: 150%; }
-    .submit-btn:hover {
-        transform: translateY(-3px) scale(1.02) !important;
-        box-shadow:
-            0 8px 24px rgba(61,122,53,0.45),
-            0 2px 6px rgba(0,0,0,0.15),
-            inset 0 1px 0 rgba(255,255,255,0.25) !important;
-    }
-    .submit-btn:active {
-        transform: translateY(-1px) scale(1.00) !important;
-    }
-
-    /* ─── 어코디언 (가이드) ─── */
-    .guide-accordion {
-        background: #f1ede0 !important;
-        border: 1.5px solid #c8deb8 !important;
-        border-radius: 12px !important;
-        margin-top: 0.6rem !important;
-        margin-bottom: 1.2rem !important;
-    }
-    .guide-accordion .prose p, .guide-accordion p {
-        color: #5a4a38 !important;
-        font-size: 0.92rem !important;
-        line-height: 1.75 !important;
-    }
-    .guide-accordion .prose strong, .guide-accordion strong {
-        color: #3d5a30 !important;
-    }
-
-    /* ─── Examples 버튼 ─── */
-    .examples-holder table td button,
-    .gr-samples-table td button {
-        background: #f1ede0 !important;
-        color: #4a6a38 !important;
-        border: 1.5px solid #c8deb8 !important;
-        border-radius: 8px !important;
-        font-size: 0.82rem !important;
-        font-family: 'Noto Sans KR', sans-serif !important;
-        transition: all 0.2s ease !important;
-        padding: 0.3rem 0.7rem !important;
-    }
-    .examples-holder table td button:hover,
-    .gr-samples-table td button:hover {
-        background: #d8eecc !important;
-        border-color: #6aaa4a !important;
-        color: #2d5a20 !important;
-        transform: translateY(-1px) !important;
-    }
-
-    /* ─── 결과 섹션 헤딩 ─── */
-    .main-box .prose h3 {
-        color: #3d5a2a !important;
-        font-family: 'Noto Serif KR', serif !important;
-        font-size: 1.1rem !important;
-        font-weight: 700 !important;
-        padding-bottom: 0.5rem !important;
-        border-bottom: 2px dashed #c8deb8 !important;
-        margin-bottom: 1rem !important;
-    }
-
-    /* ─── 코스 타임라인 ─── */
-    .course-step {
-        display: flex;
-        align-items: flex-start;
-        margin-bottom: 1.4rem;
-        position: relative;
-        animation: ghibliRise 0.5s ease both;
-    }
-    .course-step:nth-child(1) { animation-delay: 0.05s; }
-    .course-step:nth-child(2) { animation-delay: 0.15s; }
-    .course-step:nth-child(3) { animation-delay: 0.25s; }
-    @keyframes ghibliRise {
-        from { opacity: 0; transform: translateY(16px) scale(0.97); }
-        to   { opacity: 1; transform: translateY(0) scale(1); }
-    }
-    .course-step:not(:last-child)::after {
-        content: '';
-        position: absolute;
-        left: 21px;
-        top: 44px;
-        bottom: -20px;
-        width: 2px;
-        background: repeating-linear-gradient(
-            to bottom,
-            #6aaa4a 0px, #6aaa4a 4px,
-            transparent 4px, transparent 10px
-        );
-        opacity: 0.5;
-    }
-    .step-num {
-        background: linear-gradient(135deg, #6aaa5a, #3d7a35) !important;
-        color: #f5edd0 !important;
-        font-weight: 700 !important;
-        width: 42px !important;
-        height: 42px !important;
-        border-radius: 50% !important;
-        display: flex !important;
-        align-items: center !important;
-        justify-content: center !important;
-        font-size: 0.9rem !important;
-        font-family: 'Noto Serif KR', serif !important;
-        flex-shrink: 0 !important;
-        box-shadow:
-            0 3px 10px rgba(61,122,53,0.35),
-            0 0 0 3px rgba(106,170,74,0.2) !important;
-        z-index: 2 !important;
-        position: relative !important;
-    }
-    .step-content {
-        margin-left: 1.2rem !important;
-        background: #fffdf5 !important;
-        padding: 0.9rem 1.4rem !important;
-        border-radius: 14px !important;
-        border: 1.5px solid #d8eecc !important;
-        flex-grow: 1 !important;
-        transition: all 0.25s ease !important;
-        box-shadow: 0 2px 8px rgba(90,122,74,0.07) !important;
-    }
-    .step-content:hover {
-        transform: translateX(6px) !important;
-        border-color: #6aaa4a !important;
-        background: #f5fbf0 !important;
-        box-shadow: 0 4px 16px rgba(90,122,74,0.14) !important;
-    }
-    .step-place {
-        color: #2d5a20 !important;
-        font-size: 1rem !important;
-        font-weight: 700 !important;
-        font-family: 'Noto Serif KR', serif !important;
-        margin: 0 0 0.3rem 0 !important;
-    }
-    .step-desc {
-        color: #6a5040 !important;
-        font-size: 0.88rem !important;
-        margin: 0 !important;
-        line-height: 1.65 !important;
-        font-family: 'Noto Sans KR', sans-serif !important;
-    }
-
-    /* ─── 이미지 영역 ─── */
-    .main-box img {
-        border-radius: 14px !important;
-        box-shadow: 0 6px 24px rgba(90,122,74,0.2), 0 2px 6px rgba(0,0,0,0.1) !important;
-        border: 2px solid #c8deb8 !important;
-    }
-
-    /* ─── 스크롤바 ─── */
-    ::-webkit-scrollbar { width: 6px; }
-    ::-webkit-scrollbar-track { background: #f1ede0; }
-    ::-webkit-scrollbar-thumb { background: #a8c898; border-radius: 3px; }
-    ::-webkit-scrollbar-thumb:hover { background: #6aaa4a; }
-
-    /* ─── 숨김 ─── */
+    
+    /* Hide default Gradio headers or elements that clutter */
     .meta-text, [class*="meta-text"], .timer, .duration,
     .eta-bar, [class*="eta-bar"], [class*="timer"] {
         display: none !important;
     }
+    
+    /* Remove Gradio card wrappers default borders/shadows to let custom CSS shine */
+    .main-box, .gradio-container .block {
+        border: none !important;
+        background: transparent !important;
+        box-shadow: none !important;
+        padding: 0 !important;
+    }
+
+    /* --- Custom Ghibli Header --- */
+    .ghibli-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 1.5rem 1rem;
+        border-bottom: 1px solid rgba(164, 180, 148, 0.2);
+        margin-bottom: 2.5rem;
+    }
+    .ghibli-logo {
+        font-family: 'Playfair Display', 'Noto Serif KR', serif;
+        font-weight: 700;
+        font-size: 1.4rem;
+        color: #3d2b1f;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+    .home-icon {
+        font-size: 1.5rem;
+    }
+    .ghibli-nav {
+        display: flex;
+        gap: 1.5rem;
+        align-items: center;
+    }
+    .nav-item {
+        color: #5a4c40;
+        text-decoration: none;
+        font-size: 0.95rem;
+        font-weight: 500;
+        transition: all 0.2s ease;
+        padding: 6px 12px;
+    }
+    .nav-item:hover {
+        color: #3d5a2d;
+    }
+    .nav-item.active {
+        background-color: #d5e5cf;
+        color: #3b5e2f;
+        border-radius: 20px;
+        font-weight: 600;
+    }
+
+    /* --- Custom Search Bar Row --- */
+    .search-row {
+        display: flex !important;
+        flex-direction: row !important;
+        align-items: center !important;
+        justify-content: center !important;
+        gap: 15px !important;
+        max-width: 800px;
+        margin: 0 auto 3rem !important;
+        background: transparent !important;
+        width: 100% !important;
+    }
+    .search-input {
+        background: transparent !important;
+    }
+    .search-input textarea, .search-input input[type="text"] {
+        background: #ffffff !important;
+        color: #3d2b1f !important;
+        border: 2px solid #a3b899 !important;
+        border-radius: 20px !important;
+        padding: 12px 24px !important;
+        font-size: 1.1rem !important;
+        font-family: 'Noto Sans KR', sans-serif !important;
+        box-shadow: inset 0 2px 4px rgba(0,0,0,0.02), 0 4px 12px rgba(163, 184, 153, 0.1) !important;
+        transition: all 0.3s ease !important;
+        height: 60px !important;
+        line-height: 36px !important;
+        min-height: 60px !important;
+    }
+    .search-input textarea:focus, .search-input input[type="text"]:focus {
+        border-color: #6aaa4a !important;
+        box-shadow: inset 0 2px 4px rgba(0,0,0,0.02), 0 6px 20px rgba(106, 170, 74, 0.2) !important;
+    }
+    
+    .search-btn {
+        width: 90px !important;
+        height: 90px !important;
+        min-width: 90px !important;
+        border-radius: 50% !important;
+        background-color: #ebdcb9 !important;
+        border: 2px solid #b8a68a !important;
+        color: #3d2b1f !important;
+        font-family: 'Playfair Display', serif !important;
+        font-size: 1.05rem !important;
+        font-weight: 700 !important;
+        cursor: pointer !important;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.05) !important;
+        display: flex !important;
+        flex-direction: column !important;
+        justify-content: center !important;
+        align-items: center !important;
+        transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275) !important;
+        
+        background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 80 80' width='80' height='80'><path d='M36 24 C33 21, 37 19, 40 21 C43 19, 47 21, 44 24 C41 27, 38 27, 36 24 Z' fill='%23849b73' stroke='%233d2b1f' stroke-width='1.5'/><path d='M46 22 C44 20, 47 18, 49 19 C51 18, 54 20, 52 22 C50 24, 48 24, 46 22 Z' fill='%23a4b494' stroke='%233d2b1f' stroke-width='1.2'/><path d='M 25 55 Q 40 68 55 55 M 51 58 L 55 55 L 53 51' stroke='%233d2b1f' stroke-width='2' fill='none' stroke-linecap='round'/></svg>") !important;
+        background-repeat: no-repeat !important;
+        background-position: center bottom 10px !important;
+        background-size: 50px !important;
+        padding-top: 10px !important;
+        padding-bottom: 35px !important;
+    }
+    .search-btn:hover {
+        transform: scale(1.05) rotate(3deg) !important;
+        background-color: #e2d4b7 !important;
+        box-shadow: 0 6px 16px rgba(0,0,0,0.08) !important;
+    }
+    .search-btn:active {
+        transform: scale(0.95) !important;
+    }
+    
+    /* --- Examples Area --- */
+    .examples-row {
+        margin: -1.5rem auto 3rem !important;
+        max-width: 800px !important;
+        text-align: center !important;
+    }
+    .examples-row table td button {
+        background: #f3edd8 !important;
+        color: #5a4c40 !important;
+        border: 1px solid #dcd3be !important;
+        border-radius: 20px !important;
+        font-size: 0.85rem !important;
+        padding: 6px 14px !important;
+        transition: all 0.2s ease !important;
+    }
+    .examples-row table td button:hover {
+        background: #e2d4b7 !important;
+        border-color: #b8a68a !important;
+        transform: translateY(-2px) !important;
+        color: #3d2b1f !important;
+    }
+
+    /* --- Empty State --- */
+    .empty-state-container {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        padding: 5rem 2rem;
+        background: #fffdf9;
+        border: 2px dashed #d5e5cf;
+        border-radius: 24px;
+        max-width: 900px;
+        margin: 0 auto;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.02);
+    }
+    .empty-state-box {
+        text-align: center;
+    }
+    .empty-icon {
+        font-size: 3rem;
+        margin-bottom: 1rem;
+        animation: floatLeaf 3s ease-in-out infinite;
+    }
+    .empty-state-box h3 {
+        font-family: 'Noto Serif KR', serif;
+        color: #3d2b1f;
+        font-size: 1.3rem;
+        margin-bottom: 0.5rem;
+    }
+    .empty-state-box p {
+        color: #8a7c70;
+        font-size: 0.95rem;
+    }
+    
+    @keyframes floatLeaf {
+        0%, 100% { transform: translateY(0) rotate(0); }
+        50% { transform: translateY(-10px) rotate(10deg); }
+    }
+
+    /* --- Results Container --- */
+    .result-container {
+        max-width: 900px;
+        margin: 0 auto;
+    }
+    .animate-fade-in {
+        animation: fadeIn 0.6s ease both;
+    }
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(20px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* --- Recommendation Card --- */
+    .recommendation-card {
+        display: flex;
+        gap: 3rem;
+        background: transparent;
+        margin-bottom: 3.5rem;
+        align-items: center;
+    }
+    .rec-left {
+        flex-shrink: 0;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        width: 240px;
+    }
+    .circle-image-wrapper {
+        width: 210px;
+        height: 210px;
+        border-radius: 50%;
+        overflow: hidden;
+        border: 3.5px solid #a4b494;
+        box-shadow: 0 8px 25px rgba(164, 180, 148, 0.3), 0 2px 6px rgba(0,0,0,0.1);
+        margin-bottom: 1rem;
+        position: relative;
+    }
+    .circle-img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        transition: transform 0.5s ease;
+    }
+    .circle-image-wrapper:hover .circle-img {
+        transform: scale(1.08);
+    }
+    .vibe-label {
+        font-family: 'Playfair Display', serif;
+        font-size: 1.15rem;
+        font-weight: 700;
+        color: #3d2b1f;
+        margin-bottom: 0.2rem;
+        text-align: center;
+    }
+    .match-badge {
+        font-family: 'Playfair Display', 'Noto Serif KR', serif;
+        font-size: 0.95rem;
+        font-weight: 600;
+        color: #7b6a5a;
+        text-align: center;
+    }
+    .rec-right {
+        flex-grow: 1;
+    }
+    .rec-badge-wrap {
+        margin-bottom: 0.6rem;
+    }
+    .rec-badge {
+        background-color: #fde8db;
+        color: #c85a25;
+        font-family: 'Playfair Display', 'Noto Serif KR', serif;
+        font-size: 0.85rem;
+        font-weight: 700;
+        padding: 5px 14px;
+        border-radius: 20px;
+        letter-spacing: 0.5px;
+    }
+    .rec-title {
+        font-family: 'Noto Serif KR', serif;
+        font-weight: 700;
+        font-size: 2.2rem;
+        color: #2b261f;
+        margin: 0.4rem 0 0.8rem;
+    }
+    .rec-work-info {
+        font-size: 0.92rem;
+        color: #5a4c40;
+        margin-bottom: 0.8rem;
+    }
+    .rec-work-info strong {
+        color: #3b5e2f;
+    }
+    .rec-desc {
+        font-family: 'Noto Serif KR', serif;
+        color: #4c3f35;
+        font-size: 1.05rem;
+        line-height: 1.75;
+        margin: 0;
+    }
+
+    /* --- Timeline Section --- */
+    .timeline-section {
+        margin-top: 2rem;
+        position: relative;
+    }
+    .timeline-badge-wrap {
+        display: flex;
+        justify-content: center;
+        margin-bottom: -15px;
+        position: relative;
+        z-index: 10;
+    }
+    .timeline-badge {
+        background-color: #d5e5cf;
+        color: #3b5e2f;
+        font-family: 'Playfair Display', 'Noto Serif KR', serif;
+        font-weight: 700;
+        font-size: 1rem;
+        padding: 8px 20px;
+        border-radius: 20px;
+        box-shadow: 0 4px 10px rgba(106, 170, 74, 0.1);
+    }
+    .timeline-card {
+        background-color: #fffefb;
+        border: 2px solid #a4b494;
+        border-radius: 30px;
+        padding: 3.5rem 2.5rem 3rem;
+        position: relative;
+        box-shadow: 0 8px 30px rgba(164, 180, 148, 0.15);
+    }
+    
+    /* Vine Corner decorations */
+    .leaf-corner {
+        position: absolute;
+        pointer-events: none;
+    }
+    .leaf-corner.tl { top: -8px; left: -8px; }
+    .leaf-corner.tr { top: -8px; right: -8px; }
+    .leaf-corner.bl { bottom: -8px; left: -8px; }
+    .leaf-corner.br { bottom: -8px; right: -8px; }
+    
+    /* Totoro Spirit Decorations */
+    .totoro-spirit {
+        position: absolute;
+        pointer-events: none;
+    }
+    .totoro-spirit.top-right {
+        top: -15px;
+        right: 40px;
+    }
+    .totoro-spirit.bottom-center {
+        bottom: -15px;
+        left: 50%;
+        transform: translateX(-50%);
+    }
+
+    /* Steps Layout (Horizontal) */
+    .steps-container {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        gap: 1rem;
+    }
+    .step-col {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+        max-width: 240px;
+    }
+    .step-img-wrapper {
+        width: 140px;
+        height: 140px;
+        border-radius: 50%;
+        overflow: hidden;
+        border: 3.5px solid #d5e5cf;
+        box-shadow: 0 6px 16px rgba(164, 180, 148, 0.15);
+        margin-bottom: 1.2rem;
+        transition: all 0.3s ease;
+    }
+    .step-col:hover .step-img-wrapper {
+        border-color: #a4b494;
+        transform: scale(1.05);
+    }
+    .step-circle-img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+    .step-title {
+        font-family: 'Playfair Display', 'Noto Serif KR', serif;
+        font-size: 1.05rem;
+        font-weight: 700;
+        color: #2b261f;
+        margin: 0 0 0.5rem 0;
+        line-height: 1.4;
+    }
+    .step-desc {
+        font-size: 0.88rem;
+        color: #6a5a4c;
+        line-height: 1.6;
+        margin: 0;
+        font-family: 'Noto Sans KR', sans-serif;
+    }
+    .step-arrow {
+        align-self: center;
+        margin-top: -40px;
+        opacity: 0.7;
+    }
+
+    /* Animating Step entry */
+    .animate-step {
+        animation: stepRise 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) both;
+    }
+    @keyframes stepRise {
+        from { opacity: 0; transform: translateY(20px) scale(0.95); }
+        to { opacity: 1; transform: translateY(0) scale(1); }
+    }
+
+    /* --- Responsive design for mobile --- */
+    @media (max-width: 768px) {
+        .ghibli-header {
+            flex-direction: column;
+            gap: 1rem;
+            text-align: center;
+        }
+        .search-row {
+            flex-direction: column !important;
+            gap: 12px !important;
+        }
+        .search-input {
+            width: 100% !important;
+        }
+        .search-btn {
+            width: 80px !important;
+            height: 80px !important;
+            min-width: 80px !important;
+            padding-bottom: 28px !important;
+            background-size: 42px;
+        }
+        .recommendation-card {
+            flex-direction: column;
+            gap: 1.5rem;
+            text-align: center;
+        }
+        .rec-left {
+            width: 100%;
+        }
+        .steps-container {
+            flex-direction: column;
+            align-items: center;
+            gap: 2.5rem;
+        }
+        .step-col {
+            max-width: 100%;
+        }
+        .step-arrow {
+            transform: rotate(90deg);
+            margin: -10px 0;
+        }
+    }
     """
     
     with gr.Blocks(css=css, theme=theme, title="지브리 감성 여행지 추천 서비스") as demo:
-        with gr.Group(elem_classes=["title-section"]):
-            gr.Markdown("# 🌿 Ghibli-Vibe Travel Mapper")
-            gr.Markdown("<p style='text-align: center; color: rgba(255,255,255,0.7); font-size: 1.05rem; font-weight: 300; letter-spacing: 0.3px;'>원하는 여행 분위기를 일상어로 쓰시면, 지브리 감성이 가득한 실제 여행지와 반나절 코스를 추천해 드립니다.</p>")
-            
-        with gr.Accordion("💡 Ghibli Travel Mapper 사용 가이드 (클릭하여 열기)", open=False, elem_classes=["guide-accordion"]):
-            gr.Markdown("""
-**✨ 이렇게 사용하세요:**
-1. 원하는 **여행 분위기나 테마**를 자유롭게 입력하세요
-2. **🌿 감성 여행지 찾기** 버튼을 누르세요
-3. AI가 추천하는 **지브리 감성 여행지 + 반나절 코스**를 확인하세요
-
-**💬 예시 키워드:** 조용한 숲속 오두막, 바다가 보이는 레트로 골목길, 안개 낀 유럽 산골 마을...
+        # Header
+        with gr.Row(elem_classes=["header-row"]):
+            gr.HTML("""
+            <div class="ghibli-header">
+                <div class="ghibli-logo">
+                    <span class="home-icon">🏡</span>
+                    Ghibli-Vibe Travel Mapper
+                </div>
+                <div class="ghibli-nav">
+                    <a href="#" class="nav-item active">Home</a>
+                    <a href="#" class="nav-item">Explore Vibes</a>
+                    <a href="#" class="nav-item">My Saved Trips</a>
+                    <a href="#" class="nav-item">About</a>
+                </div>
+            </div>
             """)
             
-        # 2. 상단 입력 영역 (가운데 정렬된 아담한 폭의 카드)
-        with gr.Row():
-            with gr.Column(scale=1):
-                pass
-            with gr.Column(scale=2):  # 모바일에서는 꽉 차고, PC에서는 가로폭 50%를 차지하는 카드
-                with gr.Group(elem_classes=["main-box"]):
-                    user_input = gr.Textbox(
-                        label="원하는 분위기 또는 테마 입력",
-                        placeholder="예: 바다가 보이는 조용한 레트로 골목길 / 초록빛 숲속과 신비로운 분위기가 가득한 조용한 오두막",
-                        lines=3
-                    )
-                    submit_btn = gr.Button("🌿 감성 여행지 찾기", elem_classes=["submit-btn"])
-                    gr.Examples(
-                        examples=[
-                            ["바다가 보이는 조용한 레트로 골목길"],
-                            ["초록빛 숲속과 신비로운 분위기가 가득한 조용한 오두막"],
-                            ["빨간 지붕이 있고 구름이 흐르는 청량한 유럽풍 하늘 아래 마을"],
-                            ["복잡한 도심 속 숨겨진 신비로운 전통 정원"]
-                        ],
-                        inputs=user_input,
-                        label="💡 추천 분위기 예시 (클릭하면 자동 입력됩니다)"
-                    )
-            with gr.Column(scale=1):
-                pass
+        # Search Box Input Row
+        with gr.Row(elem_classes=["search-row"]):
+            user_input = gr.Textbox(
+                show_label=False,
+                placeholder="어떤 분위기의 여행을 떠나고 싶으신가요? (예: 바다가 보이는 조용한 시골 마을)",
+                elem_classes=["search-input"],
+                scale=8
+            )
+            submit_btn = gr.Button(
+                "Search",
+                elem_classes=["search-btn"],
+                scale=1
+            )
+            
+        # Examples
+        with gr.Row(elem_classes=["examples-row"]):
+            gr.Examples(
+                examples=[
+                    ["바다가 보이는 조용한 레트로 골목길"],
+                    ["초록빛 숲속과 신비로운 분위기가 가득한 조용한 오두막"],
+                    ["빨간 지붕이 있고 구름이 흐르는 청량한 유럽풍 하늘 아래 마을"],
+                    ["복잡한 도심 속 숨겨진 신비로운 전통 정원"]
+                ],
+                inputs=user_input,
+                label="💡 추천 분위기 예시 (클릭하면 자동 입력됩니다)"
+            )
 
-        # 3. 하단 결과 영역 (가로폭을 넓게 쓰는 시원한 레이아웃 - 좌측 이미지, 우측 텍스트)
-        with gr.Row():
-            with gr.Column(scale=5):  # 좌측: 실제 감성 풍경화
-                with gr.Group(elem_classes=["main-box"]):
-                    gr.Markdown("### 🎨 감성 풍경화")
-                    image_out = gr.Image(label="감성 풍경화", interactive=False, show_label=False)
-                    
-            with gr.Column(scale=7):  # 우측: AI 추천 여행지 큐레이션 및 타임라인
-                with gr.Group(elem_classes=["main-box"]):
-                    gr.Markdown("### 📍 추천 결과")
-                    with gr.Row():
-                        dest_out = gr.Textbox(label="추천 목적지", interactive=False)
-                        work_out = gr.Textbox(label="매칭된 지브리 작품", interactive=False)
-                    vibe_out = gr.Textbox(label="큐레이터의 감성 코멘트", lines=3, interactive=False)
-                    
-                    gr.Markdown("### 🗺️ 반나절 감성 동선 (Course)")
-                    course_out = gr.HTML(label="추천 코스")
+        # Output Results Container
+        with gr.Row(elem_classes=["results-wrapper"]):
+            with gr.Column():
+                result_out = gr.HTML(value=get_empty_state_html())
                     
         submit_btn.click(
             fn=recommend,
             inputs=user_input,
-            outputs=[dest_out, work_out, vibe_out, course_out, image_out]
+            outputs=result_out
         )
         
     return demo
