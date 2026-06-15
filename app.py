@@ -138,10 +138,16 @@ def recommend(user_vibe: str):
         raw_result = response.choices[0].message.content
         result = parse_llm_output_safely(raw_result)
     except Exception as e:
-        print(f"Error during LLM call: {e}")
+        import traceback
+        err_msg = f"Error during LLM call: {type(e).__name__}: {str(e)}\n{traceback.format_exc()}"
+        print(err_msg)
         # fallback
-        result = FALLBACK_RECOMMENDATION
-        result["vibe_comment"] = f"[안내: API 응답 지연으로 인해 기본 추천 코스가 제공됩니다.]\n\n{result['vibe_comment']}"
+        result = {
+            "destination": FALLBACK_RECOMMENDATION["destination"],
+            "matching_ghibli_work": FALLBACK_RECOMMENDATION["matching_ghibli_work"],
+            "vibe_comment": f"[오류 디버깅 안내 - {type(e).__name__}: {str(e)}]\n\n{FALLBACK_RECOMMENDATION['vibe_comment']}",
+            "half_day_course": FALLBACK_RECOMMENDATION["half_day_course"]
+        }
         
     destination = result.get("destination", "알 수 없는 목적지")
     ghibli_work = result.get("matching_ghibli_work", "지브리 작품")
