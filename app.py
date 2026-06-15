@@ -319,8 +319,11 @@ def build_ui() -> gr.Blocks:
         with gr.Accordion("💡 Ghibli Travel Mapper 데모 프리뷰 및 안내 가이드 (클릭하여 열기)", open=False, elem_classes=["guide-accordion"]):
             gr.Image("https://raw.githubusercontent.com/aaa0034213/aiweb2026/main/screenshot.png", show_label=False, interactive=False)
             
+        # 2. 상단 입력 영역 (가운데 정렬된 아담한 폭의 카드)
         with gr.Row():
             with gr.Column(scale=1):
+                pass
+            with gr.Column(scale=2):  # 모바일에서는 꽉 차고, PC에서는 가로폭 50%를 차지하는 카드
                 with gr.Group(elem_classes=["main-box"]):
                     user_input = gr.Textbox(
                         label="원하는 분위기 또는 테마 입력",
@@ -338,8 +341,12 @@ def build_ui() -> gr.Blocks:
                         inputs=user_input,
                         label="💡 추천 분위기 예시 (클릭하면 자동 입력됩니다)"
                     )
-                    
             with gr.Column(scale=1):
+                pass
+
+        # 3. 하단 결과 영역 (가로폭을 넓게 쓰는 시원한 레이아웃)
+        with gr.Row():
+            with gr.Column(scale=12):
                 with gr.Group(elem_classes=["main-box"]):
                     gr.Markdown("### 📍 추천 결과")
                     with gr.Row():
