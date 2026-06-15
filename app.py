@@ -34,9 +34,7 @@ def _safe_j2p(schema, defs=None):
 _gc_utils._json_schema_to_python_type = _safe_j2p
 
 from dotenv import load_dotenv
-from langchain_core.output_parsers import JsonOutputParser
-from langchain_core.prompts import ChatPromptTemplate
-from langchain_huggingface import ChatHuggingFace, HuggingFaceEndpoint
+from huggingface_hub import InferenceClient
 
 from model_config import LLM_MODEL, get_token
 
@@ -98,29 +96,6 @@ FALLBACK_RECOMMENDATION = {
     ]
 }
 
-_chain = None
-
-def _chain_lazy():
-    """LCEL 체인: prompt | ChatHuggingFace | JsonOutputParser"""
-    global _chain
-    if _chain is None:
-        endpoint = HuggingFaceEndpoint(
-            repo_id=LLM_MODEL,
-            task="text-generation",
-            max_new_tokens=1024,
-            temperature=0.7,
-            huggingfacehub_api_token=get_token(),
-        )
-        llm = ChatHuggingFace(llm=endpoint)
-        prompt = ChatPromptTemplate.from_messages(
-            [
-                ("system", SYSTEM_PROMPT),
-                ("human", "내가 원하는 여행 분위기: {user_vibe}"),
-            ]
-        )
-        _chain = prompt | llm | JsonOutputParser()
-    return _chain
-
 def parse_llm_output_safely(raw_output: Any) -> dict[str, Any]:
     """
     JsonOutputParser가 가끔 실패하거나 문자열 그대로 넘어오는 경우를 대비하여
@@ -149,14 +124,24 @@ def recommend(user_vibe: str):
         )
     
     try:
-        chain = _chain_lazy()
-        raw_result = chain.invoke({"user_vibe": user_vibe})
+        client = InferenceClient(token=get_token())
+        response = client.chat_completion(
+            model=LLM_MODEL,
+            messages=[
+                {"role": "system", "content": SYSTEM_PROMPT},
+                {"role": "user", "content": f"내가 원하는 여행 분위기: {user_vibe}"}
+            ],
+            max_tokens=800,
+            temperature=0.7,
+            timeout=15,
+        )
+        raw_result = response.choices[0].message.content
         result = parse_llm_output_safely(raw_result)
     except Exception as e:
-        print(f"Error during chain invoke or parsing: {e}")
+        print(f"Error during LLM call: {e}")
         # fallback
         result = FALLBACK_RECOMMENDATION
-        result["vibe_comment"] = f"[안내: API 호출 제한 등으로 인해 기본 추천 코스가 제공됩니다.]\n\n{result['vibe_comment']}"
+        result["vibe_comment"] = f"[안내: API 응답 지연으로 인해 기본 추천 코스가 제공됩니다.]\n\n{result['vibe_comment']}"
         
     destination = result.get("destination", "알 수 없는 목적지")
     ghibli_work = result.get("matching_ghibli_work", "지브리 작품")

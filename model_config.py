@@ -11,8 +11,8 @@ from __future__ import annotations
 
 import os
 
-# 지브리 감성 추천용 텍스트 LLM (무료 티어 호환성 좋은 instruct 모델)
-LLM_MODEL = "meta-llama/Meta-Llama-3-8B-Instruct"
+# 지브리 감성 추천용 텍스트 LLM (한국어 및 JSON 성능이 뛰어난 공개 모델)
+LLM_MODEL = "Qwen/Qwen2.5-72B-Instruct"
 
 
 def get_token() -> str:
