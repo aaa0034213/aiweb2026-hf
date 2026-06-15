@@ -367,169 +367,312 @@ def recommend(user_vibe: str):
 
 def build_ui() -> gr.Blocks:
     # 1. 지브리 테마 스타일 정의 (라이트 모드 강제 적용)
-    theme = gr.themes.Soft(
-        primary_hue="green",
-        secondary_hue="stone",
-        neutral_hue="stone",
-    ).set(
-        # 전체 배경 및 블록 배경을 따뜻한 미색과 흰색으로 고정 (다크모드에서도 강제 적용)
-        body_background_fill="#fcfaf2",
-        body_background_fill_dark="#fcfaf2",
-        block_background_fill="#ffffff",
-        block_background_fill_dark="#ffffff",
-        
-        # 텍스트 입출력 상자 배경색 고정
-        input_background_fill="#ffffff",
-        input_background_fill_dark="#ffffff",
-        
-        # 텍스트 색상 및 어두운 모드 대비 텍스트 색상 고정
-        body_text_color="#4e342e",
-        body_text_color_dark="#4e342e",
-        block_label_text_color="#2e7d32",
-        block_label_text_color_dark="#2e7d32",
-        
-        # 버튼 스타일링
-        button_primary_background_fill="linear-gradient(135deg, #4caf50 0%, #2e7d32 100%)",
-        button_primary_background_fill_dark="linear-gradient(135deg, #4caf50 0%, #2e7d32 100%)",
+    theme = gr.themes.Base().set(
+        body_background_fill="transparent",
+        body_background_fill_dark="transparent",
+        block_background_fill="transparent",
+        block_background_fill_dark="transparent",
+        input_background_fill="transparent",
+        input_background_fill_dark="transparent",
+        body_text_color="#ffffff",
+        body_text_color_dark="#ffffff",
+        block_label_text_color="rgba(255,255,255,0.6)",
+        block_label_text_color_dark="rgba(255,255,255,0.6)",
+        button_primary_background_fill="linear-gradient(135deg, #56ab2f 0%, #2e7d32 100%)",
+        button_primary_background_fill_dark="linear-gradient(135deg, #56ab2f 0%, #2e7d32 100%)",
         button_primary_text_color="#ffffff",
         button_primary_text_color_dark="#ffffff",
-        
-        # 테두리 선
-        border_color_primary="#e0dcd3",
-        border_color_primary_dark="#e0dcd3",
+        border_color_primary="rgba(255,255,255,0.15)",
+        border_color_primary_dark="rgba(255,255,255,0.15)",
     )
 
     css = """
-    @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&family=Noto+Sans+KR:wght@300;400;700&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@300;400;600;700&family=Outfit:wght@300;400;500;600;700;800&family=Noto+Sans+KR:wght@300;400;500;700&display=swap');
 
+    /* ─── 전체 배경 ─── */
     .gradio-container {
-        background-color: #fcfaf2 !important;
-        font-family: 'Outfit', 'Noto Sans KR', -apple-system, sans-serif !important;
+        background: linear-gradient(160deg, #0d2b1a 0%, #1a4a2e 40%, #0f3624 100%) !important;
+        min-height: 100vh !important;
+        font-family: 'Outfit', 'Noto Sans KR', sans-serif !important;
     }
+    body, .gradio-container * {
+        box-sizing: border-box;
+    }
+
+    /* ─── 히어로 헤더 ─── */
     .title-section {
-        text-align: center;
-        margin-bottom: 2rem;
-        padding: 2rem;
-        background: linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%);
-        border-radius: 16px;
-        box-shadow: 0 4px 15px rgba(0,0,0,0.05);
-        border: 1px solid #a5d6a7;
+        text-align: center !important;
+        padding: 3rem 2rem 2.5rem !important;
+        background: linear-gradient(135deg,
+            rgba(255,255,255,0.07) 0%,
+            rgba(255,255,255,0.03) 100%) !important;
+        backdrop-filter: blur(20px) !important;
+        -webkit-backdrop-filter: blur(20px) !important;
+        border-radius: 24px !important;
+        border: 1px solid rgba(255,255,255,0.12) !important;
+        box-shadow:
+            0 8px 32px rgba(0,0,0,0.3),
+            inset 0 1px 0 rgba(255,255,255,0.1) !important;
+        margin-bottom: 1.5rem !important;
+        position: relative !important;
+        overflow: hidden !important;
     }
-    /* 타이틀 및 마크다운 텍스트 색상 및 정렬 강제 */
+    .title-section::before {
+        content: '';
+        position: absolute;
+        top: -50%;
+        left: -50%;
+        width: 200%;
+        height: 200%;
+        background: radial-gradient(ellipse at 60% 40%, rgba(76,175,80,0.12) 0%, transparent 60%),
+                    radial-gradient(ellipse at 20% 80%, rgba(212,167,87,0.08) 0%, transparent 50%);
+        pointer-events: none;
+    }
     .title-section h1, .title-section .prose h1, .title-section h1 * {
-        color: #2e7d32 !important;
-        font-size: 2.2rem !important;
+        color: #ffffff !important;
+        font-size: 2.8rem !important;
         font-weight: 800 !important;
-        margin-bottom: 0.5rem !important;
-        text-shadow: 1px 1px 2px rgba(255,255,255,0.8);
+        font-family: 'Outfit', sans-serif !important;
+        letter-spacing: -0.5px !important;
+        margin-bottom: 0.6rem !important;
+        text-shadow: 0 2px 20px rgba(76,175,80,0.4) !important;
         text-align: center !important;
     }
     .title-section p, .title-section .prose p, .title-section p * {
-        color: #4e342e !important;
-        font-size: 1.1rem !important;
+        color: rgba(255,255,255,0.75) !important;
+        font-size: 1.05rem !important;
+        font-family: 'Noto Sans KR', sans-serif !important;
+        font-weight: 300 !important;
+        letter-spacing: 0.3px !important;
         margin: 0 !important;
         text-align: center !important;
     }
+
+    /* ─── 유리 카드 (glassmorphism) ─── */
     .main-box {
-        background: white !important;
-        border-radius: 16px !important;
-        border: 1px solid #e0dcd3 !important;
-        box-shadow: 0 8px 30px rgba(0,0,0,0.02) !important;
-        padding: 1.5rem !important;
+        background: rgba(255,255,255,0.06) !important;
+        backdrop-filter: blur(16px) !important;
+        -webkit-backdrop-filter: blur(16px) !important;
+        border-radius: 20px !important;
+        border: 1px solid rgba(255,255,255,0.12) !important;
+        box-shadow:
+            0 8px 32px rgba(0,0,0,0.25),
+            inset 0 1px 0 rgba(255,255,255,0.08) !important;
+        padding: 1.8rem !important;
+        transition: box-shadow 0.3s ease !important;
     }
-    /* 다크모드 대응: 입력창 텍스트 색상을 어두운 갈색으로 강제 고정 */
+    .main-box:hover {
+        box-shadow:
+            0 12px 40px rgba(0,0,0,0.3),
+            inset 0 1px 0 rgba(255,255,255,0.1) !important;
+    }
+
+    /* ─── 텍스트 박스 ─── */
     textarea, input[type="text"] {
-        color: #4e342e !important;
-        background-color: #ffffff !important;
+        background: rgba(255,255,255,0.08) !important;
+        color: #ffffff !important;
+        border: 1px solid rgba(255,255,255,0.2) !important;
+        border-radius: 12px !important;
+        font-family: 'Noto Sans KR', sans-serif !important;
+        font-size: 0.95rem !important;
+        transition: all 0.2s ease !important;
     }
-    /* 아웃풋 텍스트박스 비활성화 상태 스타일 재정의 */
+    textarea:focus, input[type="text"]:focus {
+        background: rgba(255,255,255,0.12) !important;
+        border-color: rgba(76,175,80,0.6) !important;
+        box-shadow: 0 0 0 3px rgba(76,175,80,0.15) !important;
+        outline: none !important;
+    }
+    textarea::placeholder, input[type="text"]::placeholder {
+        color: rgba(255,255,255,0.35) !important;
+    }
     textarea[readonly], input[readonly] {
-        background-color: #fdfcf7 !important;
-        color: #4e342e !important;
-        border-color: #d0e8d2 !important;
+        background: rgba(255,255,255,0.05) !important;
+        color: rgba(255,255,255,0.85) !important;
+        border-color: rgba(255,255,255,0.1) !important;
         cursor: default !important;
-        box-shadow: inset 0 1px 3px rgba(0,0,0,0.02) !important;
     }
-    .submit-btn {
-        background: linear-gradient(135deg, #4caf50 0%, #2e7d32 100%) !important;
-        color: white !important;
-        border: none !important;
-        font-weight: bold !important;
-        border-radius: 8px !important;
+
+    /* ─── 라벨 텍스트 ─── */
+    label, .label-wrap span, .block label span {
+        color: rgba(255,255,255,0.65) !important;
+        font-size: 0.85rem !important;
+        font-weight: 500 !important;
+        letter-spacing: 0.5px !important;
+        text-transform: uppercase !important;
+    }
+
+    /* ─── 마크다운 헤딩 (결과 영역) ─── */
+    .main-box .prose h3, .main-box h3 {
+        color: rgba(255,255,255,0.9) !important;
         font-size: 1.1rem !important;
-        box-shadow: 0 4px 12px rgba(46,125,50,0.2) !important;
-        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+        font-weight: 600 !important;
+        border-bottom: 1px solid rgba(255,255,255,0.1) !important;
+        padding-bottom: 0.5rem !important;
+        margin-bottom: 1rem !important;
     }
+
+    /* ─── 버튼 ─── */
+    .submit-btn {
+        background: linear-gradient(135deg, #56ab2f 0%, #2e7d32 50%, #1b5e20 100%) !important;
+        color: #ffffff !important;
+        border: none !important;
+        border-radius: 14px !important;
+        font-size: 1.05rem !important;
+        font-weight: 700 !important;
+        font-family: 'Outfit', sans-serif !important;
+        letter-spacing: 0.5px !important;
+        padding: 0.9rem 2rem !important;
+        box-shadow:
+            0 4px 20px rgba(46,125,50,0.4),
+            inset 0 1px 0 rgba(255,255,255,0.2) !important;
+        transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) !important;
+        position: relative !important;
+        overflow: hidden !important;
+    }
+    .submit-btn::before {
+        content: '';
+        position: absolute;
+        top: 0; left: -100%;
+        width: 100%; height: 100%;
+        background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+        transition: left 0.5s ease;
+    }
+    .submit-btn:hover::before { left: 100%; }
     .submit-btn:hover {
-        transform: translateY(-2px) !important;
-        box-shadow: 0 6px 20px rgba(46,125,50,0.3) !important;
-        background: linear-gradient(135deg, #66bb6a 0%, #388e3c 100%) !important;
+        transform: translateY(-3px) scale(1.01) !important;
+        box-shadow:
+            0 8px 30px rgba(46,125,50,0.5),
+            inset 0 1px 0 rgba(255,255,255,0.25) !important;
     }
+    .submit-btn:active {
+        transform: translateY(-1px) !important;
+    }
+
+    /* ─── 어코디언 (가이드) ─── */
+    .guide-accordion {
+        background: rgba(255,255,255,0.04) !important;
+        border: 1px solid rgba(255,255,255,0.1) !important;
+        border-radius: 14px !important;
+        margin-top: 0.8rem !important;
+        margin-bottom: 1.2rem !important;
+        backdrop-filter: blur(10px) !important;
+    }
+    .guide-accordion button {
+        color: rgba(255,255,255,0.7) !important;
+        font-size: 0.9rem !important;
+    }
+    .guide-accordion .prose p, .guide-accordion p {
+        color: rgba(255,255,255,0.65) !important;
+        font-size: 0.9rem !important;
+    }
+    .guide-accordion .prose strong, .guide-accordion strong {
+        color: rgba(255,255,255,0.85) !important;
+    }
+
+    /* ─── Examples 버튼 ─── */
+    .examples-holder table td button,
+    .gr-samples-table td button {
+        background: rgba(255,255,255,0.06) !important;
+        color: rgba(255,255,255,0.75) !important;
+        border: 1px solid rgba(255,255,255,0.12) !important;
+        border-radius: 8px !important;
+        transition: all 0.2s ease !important;
+        font-size: 0.85rem !important;
+    }
+    .examples-holder table td button:hover,
+    .gr-samples-table td button:hover {
+        background: rgba(76,175,80,0.2) !important;
+        border-color: rgba(76,175,80,0.4) !important;
+        color: #ffffff !important;
+    }
+
+    /* ─── 감성 코스 타임라인 ─── */
     .course-step {
         display: flex;
-        margin-bottom: 1.5rem;
+        align-items: flex-start;
+        margin-bottom: 1.4rem;
         position: relative;
+        animation: fadeInUp 0.4s ease both;
+    }
+    .course-step:nth-child(2) { animation-delay: 0.1s; }
+    .course-step:nth-child(3) { animation-delay: 0.2s; }
+    @keyframes fadeInUp {
+        from { opacity: 0; transform: translateY(12px); }
+        to   { opacity: 1; transform: translateY(0); }
     }
     .course-step:not(:last-child)::after {
         content: '';
         position: absolute;
-        left: 24px;
-        top: 48px;
-        bottom: -24px;
+        left: 22px;
+        top: 46px;
+        bottom: -20px;
         width: 2px;
-        background: #c8e6c9;
+        background: linear-gradient(to bottom, rgba(76,175,80,0.6), rgba(76,175,80,0.1));
     }
     .step-num {
-        background: #4caf50;
-        color: white;
-        font-weight: 700;
-        width: 48px;
-        height: 48px;
-        border-radius: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 0.9rem;
-        z-index: 2;
-        flex-shrink: 0;
-        box-shadow: 0 3px 6px rgba(76,175,80,0.3);
+        background: linear-gradient(135deg, #56ab2f, #2e7d32) !important;
+        color: white !important;
+        font-weight: 700 !important;
+        width: 44px !important;
+        height: 44px !important;
+        border-radius: 50% !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        font-size: 0.85rem !important;
+        flex-shrink: 0 !important;
+        box-shadow: 0 4px 12px rgba(46,125,50,0.4), 0 0 0 3px rgba(76,175,80,0.15) !important;
+        z-index: 2 !important;
+        position: relative !important;
     }
     .step-content {
-        margin-left: 1.5rem;
-        background: white;
-        padding: 1rem 1.5rem;
-        border-radius: 12px;
-        border: 1px solid #e8f5e9;
-        flex-grow: 1;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.03);
-        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        margin-left: 1.2rem !important;
+        background: rgba(255,255,255,0.06) !important;
+        padding: 1rem 1.4rem !important;
+        border-radius: 14px !important;
+        border: 1px solid rgba(255,255,255,0.1) !important;
+        flex-grow: 1 !important;
+        backdrop-filter: blur(8px) !important;
+        transition: all 0.3s ease !important;
     }
     .step-content:hover {
-        transform: translateX(6px);
-        box-shadow: 0 4px 15px rgba(0,0,0,0.06);
-        border-color: #a5d6a7;
+        transform: translateX(6px) !important;
+        background: rgba(255,255,255,0.09) !important;
+        border-color: rgba(76,175,80,0.35) !important;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.15) !important;
     }
     .step-place {
-        color: #2e7d32 !important;
-        font-size: 1.15rem !important;
+        color: #7dde8b !important;
+        font-size: 1.05rem !important;
         font-weight: 700 !important;
-        margin: 0 0 0.25rem 0 !important;
+        margin: 0 0 0.3rem 0 !important;
+        font-family: 'Noto Serif KR', serif !important;
     }
     .step-desc {
-        color: #5d4037 !important;
-        font-size: 0.95rem !important;
+        color: rgba(255,255,255,0.7) !important;
+        font-size: 0.9rem !important;
         margin: 0 !important;
-        line-height: 1.5 !important;
+        line-height: 1.6 !important;
     }
-    .guide-accordion {
-        background: #f1f8e9 !important;
-        border: 1px solid #c8e6c9 !important;
-        border-radius: 12px !important;
-        margin-top: 1rem !important;
-        margin-bottom: 1rem !important;
+
+    /* ─── 섹션 헤딩 마크다운 ─── */
+    .prose h3 { color: rgba(255,255,255,0.88) !important; }
+
+    /* ─── 이미지 영역 ─── */
+    .main-box img {
+        border-radius: 14px !important;
+        box-shadow: 0 8px 30px rgba(0,0,0,0.4) !important;
     }
-    /* 결과 생성 시간 및 타이머 관련 정보 숨김 처리 (깔끔한 UI 구성) */
-    .meta-text, [class*="meta-text"], .timer, .duration, .eta-bar, [class*="eta-bar"], [class*="timer"] {
+
+    /* ─── 스크롤바 ─── */
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: rgba(255,255,255,0.05); }
+    ::-webkit-scrollbar-thumb { background: rgba(76,175,80,0.4); border-radius: 3px; }
+
+    /* ─── 숨김 처리 ─── */
+    .meta-text, [class*="meta-text"], .timer, .duration,
+    .eta-bar, [class*="eta-bar"], [class*="timer"] {
         display: none !important;
     }
     """
@@ -537,7 +680,7 @@ def build_ui() -> gr.Blocks:
     with gr.Blocks(css=css, theme=theme, title="지브리 감성 여행지 추천 서비스") as demo:
         with gr.Group(elem_classes=["title-section"]):
             gr.Markdown("# 🌿 Ghibli-Vibe Travel Mapper")
-            gr.Markdown("<p style='text-align: center; color: #4e342e; font-size: 1.1rem;'>원하는 여행 분위기를 일상어로 쓰시면, 지브리 감성이 가득한 실제 여행지와 반나절 코스를 추천해 드립니다.</p>")
+            gr.Markdown("<p style='text-align: center; color: rgba(255,255,255,0.7); font-size: 1.05rem; font-weight: 300; letter-spacing: 0.3px;'>원하는 여행 분위기를 일상어로 쓰시면, 지브리 감성이 가득한 실제 여행지와 반나절 코스를 추천해 드립니다.</p>")
             
         with gr.Accordion("💡 Ghibli Travel Mapper 사용 가이드 (클릭하여 열기)", open=False, elem_classes=["guide-accordion"]):
             gr.Markdown("""
