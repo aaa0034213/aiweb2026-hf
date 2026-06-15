@@ -141,10 +141,24 @@ def recommend(user_vibe: str):
         err_msg = f"Error during LLM call: {type(e).__name__}: {str(e)}\n{traceback.format_exc()}"
         print(err_msg)
         # fallback
+        
+        # 에러 원인 분석 (토큰 누락 여부)
+        is_token_missing = "HF_TOKEN" in str(e) or "환경변수가 비어 있습니다" in str(e)
+        if is_token_missing:
+            debug_info = (
+                "⚠️ [오류 안내: Hugging Face Space의 Settings에 API 토큰(HF_TOKEN)이 등록되지 않아 기본 추천지가 제공됩니다]\n"
+                "실시간 AI 추천 기능을 활성화하려면 다음 단계를 진행해 주세요:\n"
+                "1. 본인의 Hugging Face Space 페이지 우상단의 'Settings' 메뉴 클릭\n"
+                "2. 'Variables and secrets' 섹션으로 이동\n"
+                "3. 'New secret' 버튼 클릭 → Name: 'HF_TOKEN', Value: 본인의 Hugging Face Write 토큰 값 입력\n\n"
+            )
+        else:
+            debug_info = f"⚠️ [오류 안내: API 호출 중 오류가 발생하여 기본 추천지가 제공됩니다 (오류내용: {type(e).__name__} - {str(e)})]\n\n"
+            
         result = {
             "destination": FALLBACK_RECOMMENDATION["destination"],
             "matching_ghibli_work": FALLBACK_RECOMMENDATION["matching_ghibli_work"],
-            "vibe_comment": f"[오류 디버깅 안내 - {type(e).__name__}: {str(e)}]\n\n{FALLBACK_RECOMMENDATION['vibe_comment']}",
+            "vibe_comment": f"{debug_info}{FALLBACK_RECOMMENDATION['vibe_comment']}",
             "half_day_course": FALLBACK_RECOMMENDATION["half_day_course"]
         }
         
