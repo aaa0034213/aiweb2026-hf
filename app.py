@@ -48,27 +48,28 @@ SYSTEM_PROMPT = (
     "1. 사용자의 입력에서 추상적인 감성(예: 조용함, 아기자기함, 레트로, 청량함, 자연, 신비로움)을 분석한다.\n"
     "2. 이 분위기와 가장 잘 매치되는 스튜디오 지브리 애니메이션 작품을 하나 선정한다. 반드시 실제 스튜디오 지브리 대표작(예: 이웃집 토토로, 센과 치히로의 행방불명, 마녀 배달부 키키, 하울의 움직이는 성, 천공의 성 라퓨타, 모노노케 히메, 벼랑 위의 포뇨, 귀를 기울이면, 바람계곡의 나우시카, 마루 밑 아리에티 등) 중에서만 선택해야 하며, 신카이 마코토 작품이나 다른 제작사 애니메이션(예: 너의 이름은, 목소리의 형태 등)은 절대 제외하라.\n"
     "3. 그 지브리 작품의 감성을 고스란히 느낄 수 있는 '실제 전 세계 여행지(도시, 마을, 혹은 특정 장소)' 1곳을 추천한다.\n"
+    "   ※ destination과 half_day_course의 place 필드에는 반드시 영문 지명을 괄호 () 안에 함께 표기해야 한다. (예: 일본 교토 아라시야마 (Arashiyama, Kyoto))\n"
     "4. 이 장소가 선정된 이유와 지브리 작품의 어떤 장면/감성과 연결되는지 따뜻하고 감성적인 어조로 설명하는 '감성 코멘트'를 작성한다.\n"
     "5. 추천된 장소를 중심으로 도보 또는 가볍게 이동 가능한 3단계 반나절 여행 동선(코스)을 기획한다. 각 단계는 장소 이름과 그곳에서 느낄 수 있는 감성적 활동을 포함해야 한다.\n\n"
     "반드시 아래 JSON 스키마 형식으로만 응답해야 하며, 다른 여담이나 설명, markdown 코드 블록 기호(```json 등)는 절대 포함하지 마라. JSON 객체로만 출력하라.\n"
     "{\n"
-    '  "destination": "추천 목적지 이름 (예: 일본 가마쿠라 고쿠라쿠지 역)",\n'
+    '  "destination": "추천 목적지 한국어명과 영문명. 반드시 영문명을 괄호 () 안에 포함할 것 (예: 일본 가마쿠라 (Kamakura, Japan))",\n'
     '  "matching_ghibli_work": "매칭되는 지브리 애니메이션 제목 (예: 이웃집 토토로)",\n'
     '  "vibe_comment": "따뜻하고 서정적인 어조의 감성 코멘트 (2-3문장)",\n'
     '  "half_day_course": [\n'
     "    {\n"
     '      "step": 1,\n'
-    '      "place": "코스 1의 장소 이름",\n'
+    '      "place": "코스 1의 장소명 (영문명 포함, 예: 고쿠라쿠지 (Gokurakuji))",\n'
     '      "description": "그곳에서 할 감성적인 활동이나 느낄 수 있는 분위기 설명"\n'
     "    },\n"
     "    {\n"
     '      "step": 2,\n'
-    '      "place": "코스 2의 장소 이름",\n'
+    '      "place": "코스 2의 장소명 (영문명 포함, 예: 에노시마 (Enoshima))",\n'
     '      "description": "그곳에서 할 감성적인 활동이나 느낄 수 있는 분위기 설명"\n'
     "    },\n"
     "    {\n"
     '      "step": 3,\n'
-    '      "place": "코스 3의 장소 이름",\n'
+    '      "place": "코스 3의 장소명 (영문명 포함, 예: 가마쿠라 대불 (Kamakura Daibutsu))",\n'
     '      "description": "그곳에서 할 감성적인 활동이나 느낄 수 있는 분위기 설명"\n'
     "    }\n"
     "  ]\n"
@@ -206,7 +207,7 @@ def _search_wiki_image(lang: str, q: str) -> str | None:
         img_url = (
             f"https://{lang}.wikipedia.org/w/api.php"
             f"?action=query&titles={urllib.parse.quote(page_title)}"
-            f"&prop=pageimages&format=json&pithumbsize=800"
+            f"&prop=pageimages&format=json&pithumbsize=640"
         )
         req = urllib.request.Request(img_url, headers={'User-Agent': 'Mozilla/5.0'})
         with urllib.request.urlopen(req, timeout=6) as response:
@@ -343,13 +344,16 @@ def recommend(user_vibe: str):
             print(f"Error fetching destination image: {img_err}")
 
     if not image_result and course_list:
-        # 2차: 첫 번째 코스 장소명으로 추가 검색
-        try:
-            first_place = course_list[0].get("place", "")
-            if first_place:
-                image_result = get_real_image_wiki(first_place)
-        except Exception as img_err2:
-            print(f"Error fetching course place image: {img_err2}")
+        # 2차: 코스 장소들을 순서대로 시도 (영문명 포함 가능성 높음)
+        for course_item in course_list:
+            try:
+                place_name = course_item.get("place", "")
+                if place_name:
+                    image_result = get_real_image_wiki(place_name)
+                    if image_result:
+                        break
+            except Exception as img_err2:
+                print(f"Error fetching course place image: {img_err2}")
 
     if not image_result:
         # 3차: 지브리 작품별 감성에 맞는 Fallback 이미지 선택
