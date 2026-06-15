@@ -258,12 +258,22 @@ def build_ui() -> gr.Blocks:
         margin: 0 !important;
         line-height: 1.5 !important;
     }
+    .guide-accordion {
+        background: #f1f8e9 !important;
+        border: 1px solid #c8e6c9 !important;
+        border-radius: 12px !important;
+        margin-top: 1rem !important;
+        margin-bottom: 1rem !important;
+    }
     """
     
     with gr.Blocks(css=css, title="지브리 감성 여행지 추천 서비스") as demo:
         with gr.Group(elem_classes=["title-section"]):
             gr.Markdown("# 🌿 Ghibli-Vibe Travel Mapper")
             gr.Markdown("<p style='text-align: center; color: #4e342e; font-size: 1.1rem;'>원하는 여행 분위기를 일상어로 쓰시면, 지브리 감성이 가득한 실제 여행지와 반나절 코스를 추천해 드립니다.</p>")
+            
+        with gr.Accordion("💡 Ghibli Travel Mapper 데모 프리뷰 및 안내 가이드 (클릭하여 열기)", open=False, elem_classes=["guide-accordion"]):
+            gr.Image("https://raw.githubusercontent.com/aaa0034213/aiweb2026/main/screenshot.png", show_label=False, interactive=False)
             
         with gr.Row():
             with gr.Column(scale=1):
