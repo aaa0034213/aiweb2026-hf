@@ -178,20 +178,91 @@ def parse_llm_output_safely(raw_output: Any) -> dict[str, Any]:
     raise ValueError("Invalid JSON output")
 
 
-def _validate_image_url(url: str) -> bool:
-    """URL이 실제로 접근 가능한지 HEAD 요청으로 확인한다."""
+# ── 이미지 파일명 기반 풍경 사진 판별 ──
+_EXCLUDE_IMG_KW = [
+    'food', 'cuisine', 'dish', 'meal', 'restaurant', 'cooking', 'recipe',
+    'sushi', 'ramen', 'noodle', 'rice', 'bread', 'cake', 'dessert', 'drink',
+    'portrait', 'people', 'face', 'person', 'headshot', 'selfie',
+    'flag', 'map', 'coat', 'arms', 'logo', 'seal', 'icon', 'symbol',
+    'emblem', 'stamp', 'chart', 'graph', 'sign', 'label', 'menu',
+    'interior', 'room', 'inside', 'ceiling', 'floor',
+    'wikipedia', 'commons-logo', 'wikidata', 'openstreetmap',
+]
+_PREFER_IMG_KW = [
+    'panorama', 'panoramic', 'aerial', 'view', 'scenic', 'scenery', 'landscape',
+    'skyline', 'overview', 'vista', 'horizon', 'sunset', 'sunrise', 'twilight',
+    'castle', 'temple', 'shrine', 'palace', 'ruins', 'monument', 'tower', 'arch',
+    'forest', 'mountain', 'valley', 'river', 'lake', 'sea', 'coast', 'beach',
+    'ocean', 'waterfall', 'canyon', 'field', 'meadow', 'snow', 'glacier',
+    'town', 'village', 'street', 'alley', 'bridge', 'district', 'quarter',
+    'garden', 'park', 'trail', 'path', 'road',
+]
+
+def _is_good_landscape(fname: str) -> tuple[bool, bool]:
+    """(허용 여부, 선호 여부) 반환"""
+    lower = fname.lower()
+    if not any(lower.endswith(ext) for ext in ['.jpg', '.jpeg', '.png', '.webp']):
+        return False, False
+    for kw in _EXCLUDE_IMG_KW:
+        if kw in lower:
+            return False, False
+    for kw in _PREFER_IMG_KW:
+        if kw in lower:
+            return True, True
+    return True, False
+
+
+def _get_landscape_from_article(lang: str, page_title: str, width: int = 800) -> str | None:
+    """Wikipedia 문서에서 풍경 사진 URL을 찾는다."""
     try:
-        req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
-        req.get_method = lambda: 'HEAD'
-        with urllib.request.urlopen(req, timeout=5) as resp:
-            return resp.status == 200
-    except Exception:
-        return False
+        # 1. 문서 내 모든 이미지 파일명 조회
+        images_url = (
+            f"https://{lang}.wikipedia.org/w/api.php"
+            f"?action=query&titles={urllib.parse.quote(page_title)}"
+            f"&prop=images&imlimit=30&format=json"
+        )
+        req = urllib.request.Request(images_url, headers={'User-Agent': 'Mozilla/5.0'})
+        with urllib.request.urlopen(req, timeout=7) as response:
+            data = json.loads(response.read().decode('utf-8'))
+            pages = data.get("query", {}).get("pages", {})
+            preferred, general = [], []
+            for _, page_data in pages.items():
+                for img in page_data.get("images", []):
+                    fname = img.get("title", "")
+                    allowed, preferred_flag = _is_good_landscape(fname)
+                    if allowed:
+                        (preferred if preferred_flag else general).append(fname)
+
+        # 선호 → 일반 순, 최대 4개만 시도
+        candidates = (preferred + general)[:4]
+        if not candidates:
+            return None
+
+        # 2. 파일 URL 조회 (imageinfo API)
+        titles_param = "|".join(urllib.parse.quote(f) for f in candidates)
+        info_url = (
+            f"https://{lang}.wikipedia.org/w/api.php"
+            f"?action=query&titles={titles_param}"
+            f"&prop=imageinfo&iiprop=url&iiurlwidth={width}&format=json"
+        )
+        req = urllib.request.Request(info_url, headers={'User-Agent': 'Mozilla/5.0'})
+        with urllib.request.urlopen(req, timeout=7) as response:
+            data = json.loads(response.read().decode('utf-8'))
+            pages = data.get("query", {}).get("pages", {})
+            for _, page_data in pages.items():
+                for info in page_data.get("imageinfo", []):
+                    url = info.get("thumburl") or info.get("url")
+                    if url and url.startswith("http"):
+                        return url
+    except Exception as e:
+        print(f"Landscape image search failed ({lang}, '{page_title}'): {e}")
+    return None
 
 
 def _search_wiki_image(lang: str, q: str) -> str | None:
-    """Wikipedia API로 특정 언어/쿼리에 맞는 이미지 URL을 반환. 없으면 None."""
+    """Wikipedia 검색 → 풍경 사진 URL 반환. 없으면 None."""
     try:
+        # 1. Wikipedia 검색으로 문서 제목 가져오기
         search_url = (
             f"https://{lang}.wikipedia.org/w/api.php"
             f"?action=query&list=search&srsearch={urllib.parse.quote(q)}&format=json"
@@ -199,15 +270,21 @@ def _search_wiki_image(lang: str, q: str) -> str | None:
         req = urllib.request.Request(search_url, headers={'User-Agent': 'Mozilla/5.0'})
         with urllib.request.urlopen(req, timeout=6) as response:
             data = json.loads(response.read().decode('utf-8'))
-            search_results = data.get("query", {}).get("search", [])
-            if not search_results:
+            results = data.get("query", {}).get("search", [])
+            if not results:
                 return None
-            page_title = search_results[0]["title"]
+            page_title = results[0]["title"]
 
+        # 2. 풍경 사진 우선 검색 (이미지 필터링 적용)
+        landscape_url = _get_landscape_from_article(lang, page_title)
+        if landscape_url:
+            return landscape_url
+
+        # 3. 풍경 사진 없으면 pageimage(대표 이미지) fallback
         img_url = (
             f"https://{lang}.wikipedia.org/w/api.php"
             f"?action=query&titles={urllib.parse.quote(page_title)}"
-            f"&prop=pageimages&format=json&pithumbsize=640"
+            f"&prop=pageimages&format=json&pithumbsize=800"
         )
         req = urllib.request.Request(img_url, headers={'User-Agent': 'Mozilla/5.0'})
         with urllib.request.urlopen(req, timeout=6) as response:
@@ -215,16 +292,15 @@ def _search_wiki_image(lang: str, q: str) -> str | None:
             pages = data.get("query", {}).get("pages", {})
             for _, page_data in pages.items():
                 source = page_data.get("thumbnail", {}).get("source")
-                # URL이 실제로 접근 가능한지 검증 후 반환
-                if source and _validate_image_url(source):
-                    return source
+                if source:
+                    return source  # validation 없이 바로 반환 (Wikimedia CDN 특성상 HEAD 요청 불가)
     except Exception as e:
         print(f"Wikipedia image search failed ({lang}, '{q}'): {e}")
     return None
 
 
 def get_real_image_wiki(query: str) -> str | None:
-    """목적지 쿼리로 Wikipedia 이미지를 검색한다.
+    """목적지 쿼리로 Wikipedia 풍경 이미지를 검색한다.
     괄호 안 영문명을 우선 사용하고, 국가명 접두사를 제거한 한국어명도 시도한다.
     """
     # 괄호 안 영문명 추출 (예: "유후인 온천마을 (Yufuin)" → "Yufuin")
@@ -243,7 +319,6 @@ def get_real_image_wiki(query: str) -> str | None:
         if korean_query.startswith(prefix):
             korean_query = korean_query[len(prefix):].strip()
             break
-    # 불필요한 단어 추가 제거
     for word in ["원시림", "온천마을", "마을", "역", "항구", "구시가지"]:
         korean_query = korean_query.replace(word, "").strip()
 
@@ -261,6 +336,7 @@ def get_real_image_wiki(query: str) -> str | None:
         if result:
             return result
     return None
+
 
 def recommend(user_vibe: str):
     if not user_vibe or not user_vibe.strip():
