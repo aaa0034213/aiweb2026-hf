@@ -16,24 +16,6 @@ import urllib.parse
 from typing import Any
 
 import gradio as gr
-from gradio_client import utils as _gc_utils  # noqa: E402
-
-# --- workaround: gradio_client의 JSON Schema walker가 bool 스키마를 만나면
-# 터지는 버그(#10178) 우회. Label/JSON 컴포넌트가 생성하는
-# additionalProperties: true 스키마에서 발생한다.
-_orig_get_type = _gc_utils.get_type
-def _safe_get_type(schema):
-    if isinstance(schema, bool):
-        return "Any"
-    return _orig_get_type(schema)
-_gc_utils.get_type = _safe_get_type
-
-_orig_j2p = _gc_utils._json_schema_to_python_type
-def _safe_j2p(schema, defs=None):
-    if isinstance(schema, bool):
-        return "Any"
-    return _orig_j2p(schema, defs)
-_gc_utils._json_schema_to_python_type = _safe_j2p
 
 from dotenv import load_dotenv
 from huggingface_hub import InferenceClient
