@@ -452,12 +452,10 @@ def recommend(user_vibe: str) -> str:
         err_msg = f"Error during LLM call: {type(e).__name__}: {str(e)}\n{traceback.format_exc()}"
         print(err_msg)
         
-        env_keys = [k for k in os.environ.keys() if "HF" in k or "TOKEN" in k]
         is_token_missing = "HF_TOKEN" in str(e) or "환경변수가 비어 있습니다" in str(e)
         if is_token_missing:
             debug_info = (
-                f"⚠️ [오류 안내: Hugging Face Space의 Settings에 API 토큰(HF_TOKEN)이 등록되지 않아 기본 추천지가 제공됩니다]\n"
-                f"(현재 컨테이너 내부의 토큰 관련 환경변수 리스트: {env_keys})\n\n"
+                "⚠️ [오류 안내: Hugging Face Space의 Settings에 API 토큰(HF_TOKEN)이 등록되지 않아 기본 추천지가 제공됩니다]\n\n"
                 "실시간 AI 추천 기능을 활성화하려면 다음 단계를 진행해 주세요:\n"
                 "1. 본인의 Hugging Face Space 페이지 우상단의 'Settings' 메뉴 클릭\n"
                 "2. 'Variables and secrets' 섹션으로 이동\n"
@@ -698,12 +696,6 @@ def build_ui() -> gr.Blocks:
         padding: 0 1rem 3rem !important;
     }
     
-    /* Hide default Gradio headers or elements that clutter */
-    .meta-text, [class*="meta-text"], .timer, .duration,
-    .eta-bar, [class*="eta-bar"], [class*="timer"] {
-        display: none !important;
-    }
-    
     /* Remove Gradio card wrappers default borders/shadows to let custom CSS shine */
     .main-box, .gradio-container .block {
         border: none !important;
@@ -733,29 +725,6 @@ def build_ui() -> gr.Blocks:
     .home-icon {
         font-size: 1.5rem;
     }
-    .ghibli-nav {
-        display: flex;
-        gap: 1.5rem;
-        align-items: center;
-    }
-    .nav-item {
-        color: #5a4c40;
-        text-decoration: none;
-        font-size: 0.95rem;
-        font-weight: 500;
-        transition: all 0.2s ease;
-        padding: 6px 12px;
-    }
-    .nav-item:hover {
-        color: #3d5a2d;
-    }
-    .nav-item.active {
-        background-color: #d5e5cf;
-        color: #3b5e2f;
-        border-radius: 20px;
-        font-weight: 600;
-    }
-
     /* --- Custom Search Bar Row --- */
     .search-row {
         display: flex !important;
@@ -1158,12 +1127,6 @@ def build_ui() -> gr.Blocks:
                     <span class="home-icon">🏡</span>
                     Ghibli-Vibe Travel Mapper
                 </div>
-                <div class="ghibli-nav">
-                    <a href="#" class="nav-item active">Home</a>
-                    <a href="#" class="nav-item">Explore Vibes</a>
-                    <a href="#" class="nav-item">My Saved Trips</a>
-                    <a href="#" class="nav-item">About</a>
-                </div>
             </div>
             """)
             
@@ -1200,6 +1163,11 @@ def build_ui() -> gr.Blocks:
                 result_out = gr.HTML(value=get_empty_state_html())
                     
         submit_btn.click(
+            fn=recommend,
+            inputs=user_input,
+            outputs=result_out
+        )
+        user_input.submit(
             fn=recommend,
             inputs=user_input,
             outputs=result_out
