@@ -203,7 +203,7 @@ def _is_good_landscape(fname: str) -> tuple[bool, bool]:
 WIKI_USER_AGENT = "GhibliVibeTravelMapper/1.0 (yuhj812@naver.com; course project)"
 
 
-def _get_landscape_from_article(lang: str, page_title: str, width: int = 800) -> str | None:
+def _get_landscape_from_article(lang: str, page_title: str, width: int = 960) -> str | None:
     """Wikipedia 문서에서 풍경 사진 URL을 찾는다."""
     try:
         # 1. 문서 내 모든 이미지 파일명 조회
@@ -275,7 +275,7 @@ def _search_wiki_image(lang: str, q: str) -> str | None:
         img_url = (
             f"https://{lang}.wikipedia.org/w/api.php"
             f"?action=query&titles={urllib.parse.quote(page_title)}"
-            f"&prop=pageimages&format=json&pithumbsize=800"
+            f"&prop=pageimages&format=json&pithumbsize=960"
         )
         req = urllib.request.Request(img_url, headers={'User-Agent': WIKI_USER_AGENT})
         with urllib.request.urlopen(req, timeout=6) as response:
