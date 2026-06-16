@@ -348,6 +348,24 @@ PREDEFINED_PLACE_IMAGES = {
     "shiratani": "https://images.unsplash.com/photo-1542044896530-05d85be9b11a?w=800",
     "야쿠시마": "https://images.unsplash.com/photo-1542044896530-05d85be9b11a?w=800",
     "yakushima": "https://images.unsplash.com/photo-1542044896530-05d85be9b11a?w=800",
+
+    # --- 지브리 감성 단골 해외 명소 추가 (100% 고화질 보장) ---
+    "아말피": "https://images.unsplash.com/photo-1533900298318-6b8da08a523e?w=800",
+    "amalfi": "https://images.unsplash.com/photo-1533900298318-6b8da08a523e?w=800",
+    "포시타노": "https://images.unsplash.com/photo-1516483638261-f4dbaf036963?w=800",
+    "positano": "https://images.unsplash.com/photo-1516483638261-f4dbaf036963?w=800",
+    "비스비": "https://images.unsplash.com/photo-1563245372-f21724e3856d?w=800",
+    "visby": "https://images.unsplash.com/photo-1563245372-f21724e3856d?w=800",
+    "스톡홀름": "https://images.unsplash.com/photo-1508849789987-4e5333c12b78?w=800",
+    "stockholm": "https://images.unsplash.com/photo-1508849789987-4e5333c12b78?w=800",
+    "할슈타트": "https://images.unsplash.com/photo-1520250497591-112f2f40a3f4?w=800",
+    "hallstatt": "https://images.unsplash.com/photo-1520250497591-112f2f40a3f4?w=800",
+    "체스키 크룸로프": "https://images.unsplash.com/photo-1507608869274-d3177c8bb4c7?w=800",
+    "cesky krumlov": "https://images.unsplash.com/photo-1507608869274-d3177c8bb4c7?w=800",
+    "시라카와고": "https://images.unsplash.com/photo-1528164344705-47542687000d?w=800",
+    "shirakawa": "https://images.unsplash.com/photo-1528164344705-47542687000d?w=800",
+    "아라시야마": "https://images.unsplash.com/photo-1493976040374-85c8e12f0c0e?w=800",
+    "arashiyama": "https://images.unsplash.com/photo-1493976040374-85c8e12f0c0e?w=800",
 }
 
 
@@ -381,7 +399,11 @@ def get_real_image_wiki(query: str) -> str | None:
         "포르투갈 ", "스페인 ", "노르웨이 ", "스웨덴 ", "아이슬란드 ",
         "뉴질랜드 ", "캐나다 ", "미국 ", "체코 ", "헝가리 ", "크로아티아 ",
     ]
-    korean_query = re.sub(r'\(.*?\)', '', query).strip()
+    
+    # 1) 원본 한글 쿼리 백업 (단어 과다 삭제로 인한 검색 실패 방지)
+    raw_korean_query = re.sub(r'\(.*?\)', '', query).strip()
+    
+    korean_query = raw_korean_query
     for prefix in COUNTRY_PREFIXES:
         if korean_query.startswith(prefix):
             korean_query = korean_query[len(prefix):].strip()
@@ -389,19 +411,33 @@ def get_real_image_wiki(query: str) -> str | None:
     for word in ["원시림", "온천마을", "마을", "역", "항구", "구시가지"]:
         korean_query = korean_query.replace(word, "").strip()
 
-    # 검색 우선순위: 영문명(EN) → 한글명(KO) → 한글명(EN)
-    search_list: list[tuple[str, str]] = []
+    # 순차적으로 시도할 검색 쿼리 리스트 구성 (조기 반환을 통한 지연 방지)
+    search_queries: list[tuple[str, str]] = []
+    
     if english_name:
-        search_list.append(("en", english_name))
+        # "Arashiyama, Kyoto" 처럼 쉼표가 있으면 구체적인 장소명만 먼저 분리
+        if ',' in english_name:
+            clean_en = english_name.split(',')[0].strip()
+            search_queries.append(("en", clean_en))  # 1순위: 쪼갠 영문 지명
+            search_queries.append(("en", english_name))  # 2순위: 전체 영문 지명 (동음이의어 예외 대비 백업)
+        else:
+            search_queries.append(("en", english_name))
+            
     if korean_query:
-        search_list.append(("ko", korean_query))
+        search_queries.append(("ko", korean_query))  # 3순위: 정제된 한글 지명
+        
+    if raw_korean_query and raw_korean_query != korean_query:
+        search_queries.append(("ko", raw_korean_query))  # 4순위: 훼손되지 않은 원본 한글 지명 (백업)
+        
     if korean_query and not english_name:
-        search_list.append(("en", korean_query))
+        search_queries.append(("en", korean_query))
 
-    for lang, q in search_list:
+    # 순차 검색 진행: 이미지를 찾는 즉시 함수를 빠져나와(Early Return) 불필요한 API 대기 시간 방지
+    for lang, q in search_queries:
         result = _search_wiki_image(lang, q)
         if result:
             return result
+            
     return None
 
 
