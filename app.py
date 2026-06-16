@@ -174,7 +174,7 @@ _EXCLUDE_IMG_KW = [
     'emblem', 'stamp', 'chart', 'graph', 'sign', 'label', 'menu',
     'interior', 'room', 'inside', 'ceiling', 'floor',
     'wikipedia', 'commons-logo', 'wikidata', 'openstreetmap',
-    'order', 'crest', 'badge', 'insignia', 'shield', 'monogram'
+    'jogye', 'crest', 'badge', 'insignia', 'shield', 'monogram'
 ]
 _PREFER_IMG_KW = [
     'panorama', 'panoramic', 'aerial', 'view', 'scenic', 'scenery', 'landscape',
@@ -407,7 +407,10 @@ def get_real_image_wiki(query: str) -> str | None:
 
 def get_watercolor_fallback(place_name: str) -> str:
     name_lower = place_name.lower()
-    if any(x in name_lower for x in ["temple", "shrine", "gate", "pagoda", "wat", "ji", "절", "사원", "신사", "사찰", "대불", "성당", "교회"]):
+    is_temple = any(x in name_lower for x in ["temple", "shrine", "gate", "pagoda", "wat", "절", "사원", "신사", "사찰", "대불", "성당", "교회"]) or \
+                name_lower.endswith("ji") or \
+                "-ji" in name_lower
+    if is_temple:
         return "https://images.unsplash.com/photo-1493976040374-85c8e12f0c0e?w=800"
     if any(x in name_lower for x in ["beach", "sea", "ocean", "coast", "shore", "water", "bay", "port", "harbor", "바다", "해변", "해수욕장", "연안", "포구", "항구"]):
         return "https://images.unsplash.com/photo-1505118380757-91f5f5632de0?w=800"
