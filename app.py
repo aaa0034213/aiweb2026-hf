@@ -217,6 +217,10 @@ def _is_good_landscape(fname: str) -> tuple[bool, bool]:
     return True, False
 
 
+# 위키백과 API 재단 정책(User-Agent Policy)에 맞춘 식별 문자열 선언 (Mozilla/5.0 등 범용 사용 시 429 차단 방지)
+WIKI_USER_AGENT = "GhibliVibeTravelMapper/1.0 (yuhj812@naver.com; course project)"
+
+
 def _get_landscape_from_article(lang: str, page_title: str, width: int = 800) -> str | None:
     """Wikipedia 문서에서 풍경 사진 URL을 찾는다."""
     try:
@@ -226,7 +230,7 @@ def _get_landscape_from_article(lang: str, page_title: str, width: int = 800) ->
             f"?action=query&titles={urllib.parse.quote(page_title)}"
             f"&prop=images&imlimit=30&format=json"
         )
-        req = urllib.request.Request(images_url, headers={'User-Agent': 'Mozilla/5.0'})
+        req = urllib.request.Request(images_url, headers={'User-Agent': WIKI_USER_AGENT})
         with urllib.request.urlopen(req, timeout=7) as response:
             data = json.loads(response.read().decode('utf-8'))
             pages = data.get("query", {}).get("pages", {})
@@ -250,7 +254,7 @@ def _get_landscape_from_article(lang: str, page_title: str, width: int = 800) ->
             f"?action=query&titles={titles_param}"
             f"&prop=imageinfo&iiprop=url&iiurlwidth={width}&format=json"
         )
-        req = urllib.request.Request(info_url, headers={'User-Agent': 'Mozilla/5.0'})
+        req = urllib.request.Request(info_url, headers={'User-Agent': WIKI_USER_AGENT})
         with urllib.request.urlopen(req, timeout=7) as response:
             data = json.loads(response.read().decode('utf-8'))
             pages = data.get("query", {}).get("pages", {})
@@ -272,7 +276,7 @@ def _search_wiki_image(lang: str, q: str) -> str | None:
             f"https://{lang}.wikipedia.org/w/api.php"
             f"?action=query&list=search&srsearch={urllib.parse.quote(q)}&format=json"
         )
-        req = urllib.request.Request(search_url, headers={'User-Agent': 'Mozilla/5.0'})
+        req = urllib.request.Request(search_url, headers={'User-Agent': WIKI_USER_AGENT})
         with urllib.request.urlopen(req, timeout=6) as response:
             data = json.loads(response.read().decode('utf-8'))
             results = data.get("query", {}).get("search", [])
@@ -291,7 +295,7 @@ def _search_wiki_image(lang: str, q: str) -> str | None:
             f"?action=query&titles={urllib.parse.quote(page_title)}"
             f"&prop=pageimages&format=json&pithumbsize=800"
         )
-        req = urllib.request.Request(img_url, headers={'User-Agent': 'Mozilla/5.0'})
+        req = urllib.request.Request(img_url, headers={'User-Agent': WIKI_USER_AGENT})
         with urllib.request.urlopen(req, timeout=6) as response:
             data = json.loads(response.read().decode('utf-8'))
             pages = data.get("query", {}).get("pages", {})
