@@ -174,6 +174,7 @@ _EXCLUDE_IMG_KW = [
     'emblem', 'stamp', 'chart', 'graph', 'sign', 'label', 'menu',
     'interior', 'room', 'inside', 'ceiling', 'floor',
     'wikipedia', 'commons-logo', 'wikidata', 'openstreetmap',
+    'order', 'crest', 'badge', 'insignia', 'shield', 'monogram'
 ]
 _PREFER_IMG_KW = [
     'panorama', 'panoramic', 'aerial', 'view', 'scenic', 'scenery', 'landscape',
@@ -284,7 +285,11 @@ def _search_wiki_image(lang: str, q: str) -> str | None:
             for _, page_data in pages.items():
                 source = page_data.get("thumbnail", {}).get("source")
                 if source:
-                    return source  # validation 없이 바로 반환 (Wikimedia CDN 특성상 HEAD 요청 불가)
+                    # 대표 이미지(pageimage) 파일명 추출 후 검증 (로고, 지도 등 제외)
+                    fname = source.split('/')[-1]
+                    allowed, _ = _is_good_landscape(fname)
+                    if allowed:
+                        return source
     except Exception as e:
         print(f"Wikipedia image search failed ({lang}, '{q}'): {e}")
     return None
