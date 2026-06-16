@@ -295,10 +295,81 @@ def _search_wiki_image(lang: str, q: str) -> str | None:
     return None
 
 
+# === 고화질 풍경 매칭 사전 정의 사전 (추천 예시 및 주요 지역을 위해 100% 매칭률 보장) ===
+PREDEFINED_PLACE_IMAGES = {
+    # --- 가마쿠라 (Kamakura) ---
+    "가마쿠라": "https://images.unsplash.com/photo-1503899036084-c55cdd92da26?w=800",
+    "kamakura": "https://images.unsplash.com/photo-1503899036084-c55cdd92da26?w=800",
+    "고쿠라쿠지": "https://images.unsplash.com/photo-1627564821007-87363cd44a10?w=800",
+    "gokurakuji": "https://images.unsplash.com/photo-1627564821007-87363cd44a10?w=800",
+    "에노시마": "https://images.unsplash.com/photo-1590057218685-64d50c776fde?w=800",
+    "enoshima": "https://images.unsplash.com/photo-1590057218685-64d50c776fde?w=800",
+    "대불": "https://images.unsplash.com/photo-1621259182978-f09e5e2b07ae?w=800",
+    "daibutsu": "https://images.unsplash.com/photo-1621259182978-f09e5e2b07ae?w=800",
+    "에노덴": "https://images.unsplash.com/photo-1542640244-7e672d6cef21?w=800",
+    "enoden": "https://images.unsplash.com/photo-1542640244-7e672d6cef21?w=800",
+
+    # --- 유후인 (Yufuin) ---
+    "유후인": "https://images.unsplash.com/photo-1528164344705-47542687000d?w=800",
+    "yufuin": "https://images.unsplash.com/photo-1528164344705-47542687000d?w=800",
+    "긴린코": "https://images.unsplash.com/photo-1647432822180-1a657c6b91ca?w=800",
+    "kinrinko": "https://images.unsplash.com/photo-1647432822180-1a657c6b91ca?w=800",
+    "플로랄 빌리지": "https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?w=800",
+    "floral village": "https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?w=800",
+
+    # --- 콜마르 (Colmar) ---
+    "콜마르": "https://images.unsplash.com/photo-1588667634021-995c643cfc09?w=800",
+    "colmar": "https://images.unsplash.com/photo-1588667634021-995c643cfc09?w=800",
+    "쁘띠 베니스": "https://images.unsplash.com/photo-1527631746610-bca00a040d60?w=800",
+    "petite venise": "https://images.unsplash.com/photo-1527631746610-bca00a040d60?w=800",
+    "피스터 하우스": "https://images.unsplash.com/photo-1596436889106-be35e843f974?w=800",
+    "pfister": "https://images.unsplash.com/photo-1596436889106-be35e843f974?w=800",
+    "콜마르 구시가지": "https://images.unsplash.com/photo-1580974852861-f30a5198d0e1?w=800",
+    "colmar old town": "https://images.unsplash.com/photo-1580974852861-f30a5198d0e1?w=800",
+
+    # --- 지우펀 (Jiufen) ---
+    "지우펀": "https://images.unsplash.com/photo-1571401888591-565cb0984825?w=800",
+    "jiufen": "https://images.unsplash.com/photo-1571401888591-565cb0984825?w=800",
+    "수치루": "https://images.unsplash.com/photo-1555696958-c5049b866f6f?w=800",
+    "shuqi": "https://images.unsplash.com/photo-1555696958-c5049b866f6f?w=800",
+    "아메이차로우": "https://images.unsplash.com/photo-1504618223053-559bdef9dd5a?w=800",
+    "a-mei tea house": "https://images.unsplash.com/photo-1504618223053-559bdef9dd5a?w=800",
+    "지우펀 거리": "https://images.unsplash.com/photo-1571871279261-0b5c1cbf6795?w=800",
+    "jiufen old street": "https://images.unsplash.com/photo-1571871279261-0b5c1cbf6795?w=800",
+
+    # --- 범어사 (Beomeosa) 관련 매칭 ---
+    "범어사 앞 바다": "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=800",
+    "범어사 인근 골목길": "https://images.unsplash.com/photo-1528164344705-47542687000d?w=800",
+    "범어사": "https://images.unsplash.com/photo-1608976478518-e4b78631b012?w=800",
+    "beomeosa": "https://images.unsplash.com/photo-1608976478518-e4b78631b012?w=800",
+
+    # --- 야쿠시마 (Yakushima) ---
+    "시라타니": "https://images.unsplash.com/photo-1542044896530-05d85be9b11a?w=800",
+    "shiratani": "https://images.unsplash.com/photo-1542044896530-05d85be9b11a?w=800",
+    "야쿠시마": "https://images.unsplash.com/photo-1542044896530-05d85be9b11a?w=800",
+    "yakushima": "https://images.unsplash.com/photo-1542044896530-05d85be9b11a?w=800",
+}
+
+
+def get_predefined_image(query: str) -> str | None:
+    query_lower = query.lower()
+    # 글자 수가 긴 키워드부터 매칭을 시도하여 더 구체적인 조합 우선 매칭 (예: "범어사 앞 바다"를 "범어사"보다 먼저 매칭)
+    sorted_keys = sorted(PREDEFINED_PLACE_IMAGES.keys(), key=len, reverse=True)
+    for key in sorted_keys:
+        if key in query_lower:
+            return PREDEFINED_PLACE_IMAGES[key]
+    return None
+
+
 def get_real_image_wiki(query: str) -> str | None:
-    """목적지 쿼리로 Wikipedia 풍경 이미지를 검색한다.
+    """목적지 쿼리로 Wikipedia 풍경 이미지를 검색한다. 사전 정의 딕셔너리를 우선 조회한다.
     괄호 안 영문명을 우선 사용하고, 국가명 접두사를 제거한 한국어명도 시도한다.
     """
+    # 1. 고화질 매칭 사전 정의 사전 우선 조회
+    predefined_url = get_predefined_image(query)
+    if predefined_url:
+        return predefined_url
+
     # 괄호 안 영문명 추출 (예: "유후인 온천마을 (Yufuin)" → "Yufuin")
     english_match = re.search(r'\(([A-Za-z][\w\s,\-\']+)\)', query)
     english_name = english_match.group(1).strip() if english_match else None
